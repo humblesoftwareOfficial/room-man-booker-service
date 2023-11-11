@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  yobiservice-dev:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.development
+    
+    ports:
+      - "3001:3000"
+
+    command: npm run start:dev
+
+    # restart: unless-stopped
+    
+    environment:
+      NODE_ENV: development
+
+    networks:
+      - yobi-service-network
+
+    env_file:
+      - .env.development
+
+
+networks:
+  yobi-service-network:
+    driver: bridge
