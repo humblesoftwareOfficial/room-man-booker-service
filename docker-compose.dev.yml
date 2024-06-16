@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  yobiservice-dev:
+  room-man-booker-dev:
     build:
       context: .
       dockerfile: ./Dockerfile.development
@@ -17,12 +17,12 @@ services:
       NODE_ENV: development
 
     networks:
-      - yobi-service-network
+      - room-man-booker-network
 
     env_file:
       - .env.development
 
 
 networks:
-  yobi-service-network:
+  room-man-booker-network:
     driver: bridge
