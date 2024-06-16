@@ -293,6 +293,10 @@ export class PlacesService {
           value.isAvailable !== undefined && {
             isAvailable: value.isAvailable,
           }),
+          ...(value.currentStatus !== null &&
+            value.currentStatus !== undefined && {
+              currentStatus: value.currentStatus,
+            }),
         ...(value.isOnTop !== null &&
           value.isOnTop !== undefined && {
             isOnTop: value.isOnTop,
