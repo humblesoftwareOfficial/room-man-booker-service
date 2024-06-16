@@ -1,15 +1,15 @@
-import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { DataServicesModule } from 'src/core/abstracts/abstract.data-services.module';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { CompaniesService } from './companies.service';
+import { CompaniesController } from './companies.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
-  controllers: [UsersController],
-  providers: [UsersService],
-  imports: [DataServicesModule, HttpModule,
+  controllers: [CompaniesController],
+  providers: [CompaniesService],
+  imports: [
+    DataServicesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async () => ({
@@ -19,4 +19,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     }),
   ],
 })
-export class UsersModule {}
+export class CompaniesModule {}

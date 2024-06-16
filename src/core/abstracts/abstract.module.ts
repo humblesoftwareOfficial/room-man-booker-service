@@ -1,10 +1,16 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from "@nestjs/config";
+import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from "../entities/users/user.entity";
-import { IGenericDataServices } from "../generics/generic-data.services";
-import { MongoDataServices } from "./abstract.service";
-
+import { User, UserSchema } from '../entities/users/user.entity';
+import { IGenericDataServices } from '../generics/generic-data.services';
+import { MongoDataServices } from './abstract.service';
+import { Company, CompanySchema } from '../entities/companies/companies.entity';
+import { Place, PlaceSchema } from '../entities/places/places.entity';
+import {
+  Reservation,
+  ReservationSchema,
+} from '../entities/reservation/reservation.entity';
+import { House, HouseSchema } from '../entities/houses/houses.entity';
 
 @Module({
   imports: [
@@ -16,6 +22,10 @@ import { MongoDataServices } from "./abstract.service";
     }),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
+      { name: Company.name, schema: CompanySchema },
+      { name: House.name, schema: HouseSchema },
+      { name: Place.name, schema: PlaceSchema },
+      { name: Reservation.name, schema: ReservationSchema },
     ]),
   ],
   providers: [

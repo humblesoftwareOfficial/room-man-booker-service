@@ -1,3 +1,9 @@
+import { Types } from 'mongoose';
+import { Medias } from '../entities/places/place-media.entity';
+import { IPlaceList } from 'src/features/places/places.helper';
+import { IPlaceCAAmount, IReservationList, IReservationsByPlace } from 'src/features/reservations/reservations.helper';
+import { IHouseList } from 'src/features/houses/houses.helper';
+
 export abstract class IGenericRepository<T> {
   abstract findAll(filterAttributes: string): Promise<T[]>;
 
@@ -16,5 +22,60 @@ export abstract class IGenericRepository<T> {
 }
 
 export abstract class IUserRepository<T> {
-  
+  abstract findUsersByCompany(
+    company: Types.ObjectId,
+    filterAttributes: string,
+  ): Promise<any[]>;
+  abstract authentication(phone: string, password: string): Promise<T>;
+  abstract updatePushTokens(code: string, pushtoken: string): Promise<T>;
+}
+
+export abstract class ICompanyRepository<T> {
+  abstract linkHousesToCompany(
+    houses: Types.ObjectId[],
+    idCompany: Types.ObjectId,
+  ): Promise<T>;
+
+  abstract unlinkHousesToCompany(
+    houses: Types.ObjectId[],
+    idCompany: Types.ObjectId,
+  ): Promise<T>;
+}
+
+export abstract class IHouseRepository<T> {
+  abstract linkPlacesToHouse(
+    places: Types.ObjectId[],
+    idHouse: Types.ObjectId,
+  ): Promise<T>;
+
+  abstract unlinkPlacesToHouse(
+    places: Types.ObjectId[],
+    idHouse: Types.ObjectId,
+  ): Promise<T>;
+
+  abstract list(filter: IHouseList): Promise<any[]>;
+}
+
+export abstract class IPlaceRepository<T> {
+  abstract linkMediasToPlace(
+    medias: Medias[],
+    idPlace: Types.ObjectId,
+  ): Promise<T>;
+
+  abstract unLinkMediasToPlace(
+    medias: Medias[],
+    idPlace: Types.ObjectId,
+  ): Promise<T>;
+
+  abstract list(filter: IPlaceList): Promise<any[]>;
+  abstract populatePlaceInfos(value: any): Promise<any>;
+
+  abstract getPlacesByCompany(company: Types.ObjectId): Promise<any[]>
+}
+
+export abstract class IReservationRepository<T> {
+  abstract list(filter: IReservationList): Promise<any[]>;
+  abstract populateReservationInfos(value: any): Promise<any>;
+  abstract getReservationsByPlace(filter: IReservationsByPlace): Promise<any[]>;
+  abstract getPlaceTotalAmount(filter: IPlaceCAAmount): Promise<any[]>;
 }

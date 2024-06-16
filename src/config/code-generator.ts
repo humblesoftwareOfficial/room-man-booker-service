@@ -13,3 +13,5 @@ export const codeGenerator = (prefix: string) =>
   `${prefix}-${Date.now().toString()}-${generateCode(5)}`;
 
 export const generateDefaultPassword = () => generateCode(6);
+
+export const hasValue = (value: any) => value !== null && value !== undefined;

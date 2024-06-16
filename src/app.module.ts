@@ -5,6 +5,10 @@ import { LoggerMiddleware } from './core/middlewares/logger.middleware';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './features/users/users.module';
 import { AuthenticationModule } from './features/authentication/authentication.module';
+import { CompaniesModule } from './features/companies/companies.module';
+import { HousesModule } from './features/houses/houses.module';
+import { PlacesModule } from './features/places/places.module';
+import { ReservationsModule } from './features/reservations/reservation.module';
 
 @Module({
   imports: [
@@ -13,7 +17,11 @@ import { AuthenticationModule } from './features/authentication/authentication.m
       envFilePath: ['.env', `.${process.env.NODE_ENV}.env`],
     }),
     UsersModule,
-    AuthenticationModule
+    AuthenticationModule,
+    CompaniesModule,
+    HousesModule,
+    PlacesModule,
+    ReservationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
