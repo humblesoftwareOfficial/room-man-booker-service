@@ -2,11 +2,18 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import Expo from 'expo-server-sdk';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
-import { NewReservationDto, ReservationListDto, UpdateReservationDto } from 'src/core/entities/reservation/reservation.dto';
+import {
+  NewReservationDto,
+  ReservationListDto,
+  UpdateReservationDto,
+} from 'src/core/entities/reservation/reservation.dto';
 import { Result, fail, succeed } from 'src/config/http-response';
 import { Reservation } from 'src/core/entities/reservation/reservation.entity';
 import { codeGenerator, hasValue } from 'src/config/code-generator';
-import { EReservationStatus, getReservationUpdateStatusMessage } from './reservations.helper';
+import {
+  EReservationStatus,
+  getReservationUpdateStatusMessage,
+} from './reservations.helper';
 import { stringToDate, stringToFullDate } from '../helpers/date.helper';
 import { __sendPushNotifications } from 'src/config/notifications';
 import { EAccountType } from '../users/users.helper';
@@ -38,7 +45,7 @@ export class ReservationsService {
       }
       const place = await this.dataServices.places.findOne(
         value.place,
-        '_id code isDeleted company description',
+        '_id code isDeleted company description house',
       );
       if (!place) {
         return fail({
@@ -75,46 +82,67 @@ export class ReservationsService {
         house: place.house,
         ...(hasValue(value.price) && {
           price: {
-            description: "",
+            description: '',
             devise: EDevise.FCFA,
             value: value.price,
-          }
-        })
+          },
+        }),
       };
-      const createdReservation = await this.dataServices.reservations.create(newReservation);
+      const createdReservation = await this.dataServices.reservations.create(
+        newReservation,
+      );
       await this.dataServices.places.update(place.code, {
         currentStatus: EPlaceStatus.TAKEN,
         $addToSet: {
           reservations: createdReservation['_id'],
-        }
-      })
-      const admins = await this.dataServices.users.findUsersByCompany(
-        place.enterprise as Types.ObjectId,
-        '_id code push_tokens accountType',
-      );
-      const messages = [];
+        },
+      });
 
-    //   for (let i = 0; i < admins.length; i++) {
-    //     if (
-    //       [EAccountType.ADMIN, EAccountType.SUPERVISOR].includes(
-    //         admins[i].accountType,
-    //       )
-    //     ) {
-    //       const user = admins[i];
-    //       for (let j = 0; j < user.push_tokens.length; j++) {
-    //         const pushToken = user.push_tokens[j];
-    //         if (!Expo.isExpoPushToken(pushToken)) continue;
-    //         messages.push({
-    //           to: pushToken,
-    //           sound: 'default',
-    //           title: `Heberease • Réservation`,
-    //           body: `Une nouvelle reservation vient d'être enregistrée par: ${value.firstName} ${value.lastName}`,
-    //           data: { withSome: `${value.phone}` },
-    //         });
-    //       }
-    //     }
-    //   }
-    //   __sendPushNotifications(messages);
+      /*******NOTIFICATIONS ***************/
+      const [users, company, house] = await Promise.all([
+        this.dataServices.users.findUsersByCompany(
+          place.company as Types.ObjectId,
+          '_id code push_tokens account_type firstName company house',
+        ),
+        this.dataServices.companies.findById(
+          place.company as Types.ObjectId,
+          '_id code name',
+        ),
+        this.dataServices.houses.findById(
+          place.house as Types.ObjectId,
+          '_id code name',
+        ),
+      ]);
+      const messages = [];
+      for (let i = 0; i < users.length; i++) {
+        if (users[i].code === value.by) {
+          let mustReceiveNotification = false;
+          if (users[i].account_type === EAccountType.ADMIN) {
+            mustReceiveNotification = true;
+          } else if (
+            users[i].account_type === EAccountType.SUPERVISOR &&
+            users[i].house?.toString() === place.house.toString()
+          ) {
+            mustReceiveNotification = true;
+          }
+          const user = users[i];
+          if (mustReceiveNotification) {
+            for (let j = 0; j < user.push_tokens.length; j++) {
+              const pushToken = user.push_tokens[j];
+              if (!Expo.isExpoPushToken(pushToken)) continue;
+              messages.push({
+                to: pushToken,
+                sound: 'default',
+                title: `${company.name} • ${house.name}`,
+                body: `Nouvelle reservation au nom de: ${value.firstName} ${value.lastName}`,
+                data: { withSome: `${value.phone}` },
+              });
+            }
+          }
+        }
+      }
+      __sendPushNotifications(messages);
+      /*******NOTIFICATIONS ***************/
       return succeed({
         code: HttpStatus.OK,
         data: {
@@ -225,21 +253,21 @@ export class ReservationsService {
         price: value.price || reservation.price,
       };
       await this.dataServices.reservations.update(reservation.code, update);
-    //   if (
-    //     value.status &&
-    //     reservation.user.tokenValue &&
-    //     Expo.isExpoPushToken(reservation.user.tokenValue)
-    //   ) {
-    //     const messages = [];
-    //     messages.push({
-    //       to: reservation.user.tokenValue,
-    //       sound: 'default',
-    //       title: `Heberease • Réservation`,
-    //       body: getReservationUpdateStatusMessage(value.status),
-    //       data: { withSome: `${value.phone}` },
-    //     });
-    //     __sendPushNotifications(messages);
-    //   }
+      //   if (
+      //     value.status &&
+      //     reservation.user.tokenValue &&
+      //     Expo.isExpoPushToken(reservation.user.tokenValue)
+      //   ) {
+      //     const messages = [];
+      //     messages.push({
+      //       to: reservation.user.tokenValue,
+      //       sound: 'default',
+      //       title: `Heberease • Réservation`,
+      //       body: getReservationUpdateStatusMessage(value.status),
+      //       data: { withSome: `${value.phone}` },
+      //     });
+      //     __sendPushNotifications(messages);
+      //   }
 
       return succeed({
         code: HttpStatus.OK,

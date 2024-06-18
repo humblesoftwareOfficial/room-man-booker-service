@@ -15,7 +15,13 @@ import {
 } from 'src/config/code-generator';
 import { User } from 'src/core/entities/users/user.entity';
 import { GetStatsByCompany } from 'src/core/entities/places/places.dto';
-import { getCurrentMonthInterval, getCurrentWeekInterval } from '../helpers/date.helper';
+import {
+  getCurrentMonthInterval,
+  getCurrentWeekInterval,
+} from '../helpers/date.helper';
+import { Types } from 'mongoose';
+import Expo from 'expo-server-sdk';
+import { __sendPushNotifications } from 'src/config/notifications';
 
 @Injectable()
 export class CompaniesService {
@@ -59,10 +65,12 @@ export class CompaniesService {
         admin: admin.createdUser['_id'],
         createdAt: new Date(),
         createdBy: by['_id'],
-        lastUpdatedBy: by['_id']
+        lastUpdatedBy: by['_id'],
       };
       const newCompany = await this.dataServices.companies.create(company);
-      await this.dataServices.users.update(admin.createdUser.code, { company: newCompany['_id']});
+      await this.dataServices.users.update(admin.createdUser.code, {
+        company: newCompany['_id'],
+      });
       return succeed({
         code: HttpStatus.CREATED,
         data: {
@@ -74,8 +82,8 @@ export class CompaniesService {
             lastName: admin.createdUser.lastName,
             phone: admin.createdUser.phone,
             email: admin.createdUser.email,
-            password: admin.password
-          }
+            password: admin.password,
+          },
         },
       });
     } catch (error) {
@@ -145,8 +153,8 @@ export class CompaniesService {
         acc[place.currentStatus] += 1;
         return acc;
       }, {});
-      
-      return succeed({ 
+
+      return succeed({
         data: {
           // places,
           statusCount,
@@ -187,6 +195,6 @@ export class CompaniesService {
       defaultPassword: password,
     };
     const createdUser = await this.dataServices.users.create(user);
-    return { createdUser, password }
+    return { createdUser, password };
   }
 }
