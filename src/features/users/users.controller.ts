@@ -3,7 +3,7 @@ import { UsersService } from "./users.service";
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../authentication/jwt.auth.guard";
 import { User } from "src/core/entities/users/user.entity";
-import { NewUserDto, UpdatePushTokenDto } from "src/core/entities/users/user.dto";
+import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UsersListingDto } from "src/core/entities/users/user.dto";
 
 @ApiTags('Users')
 @UseGuards(JwtAuthGuard)
@@ -40,5 +40,38 @@ export class UsersController {
   @Post('/pushtokens')
   async updatePushTokens(@Body() value: UpdatePushTokenDto) {
     return this.service.updatePushToken(value);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({
+    description: 'Users list.',
+    type: User,
+    isArray: true,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found!',
+  })
+  @Post('/list')
+  async list(@Body() value: UsersListingDto) {
+    return this.service.list(value);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({
+    description: 'User removed.',
+    type: User,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found!',
+  })
+  @Post('/remove')
+  async removeUser(@Body() value: RemoveUserDto) {
+    return this.service.removeUser(value);
   }
 }

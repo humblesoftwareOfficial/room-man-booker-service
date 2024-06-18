@@ -46,6 +46,13 @@ export class AuthenticationService {
         user: null,
       }
     }
+    if (user.isDeleted || !user.isActive) {
+      return {
+        success: false,
+        message: 'Account is no longer active',
+        user: null,
+      }
+    }
     
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {

@@ -3,6 +3,7 @@ import { Medias } from '../entities/places/place-media.entity';
 import { IPlaceList } from 'src/features/places/places.helper';
 import { IPlaceCAAmount, IReservationList, IReservationsByPlace } from 'src/features/reservations/reservations.helper';
 import { IHouseList } from 'src/features/houses/houses.helper';
+import { IUsersList } from 'src/features/users/users.helper';
 
 export abstract class IGenericRepository<T> {
   abstract findAll(filterAttributes: string): Promise<T[]>;
@@ -28,6 +29,7 @@ export abstract class IUserRepository<T> {
   ): Promise<any[]>;
   abstract authentication(phone: string, password: string): Promise<T>;
   abstract updatePushTokens(code: string, pushtoken: string): Promise<T>;
+  abstract list(filter: IUsersList): Promise<any[]>
 }
 
 export abstract class ICompanyRepository<T> {

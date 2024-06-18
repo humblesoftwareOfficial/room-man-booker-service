@@ -4,6 +4,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
+import { Types } from 'mongoose';
 import { User } from 'src/core/entities/users/user.entity';
 
 export const isValidUserCode = (code: string) =>
@@ -78,4 +79,11 @@ export enum EUserGender {
   MALE = 'MALE',
   FEMALE = 'FEMALE',
   OTHER = 'OTHER',
+}
+
+export interface IUsersList {
+  companiesId?: Types.ObjectId[];
+  skip: number;
+  limit: number;
+  roles?: string[]
 }

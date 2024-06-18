@@ -9,7 +9,7 @@ import { Result, fail, succeed } from 'src/config/http-response';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import { EAccountType, EUserGender, getDefaultUserInfos } from './users.helper';
 import { JwtService } from '@nestjs/jwt';
-import { NewUserDto, UpdatePushTokenDto } from 'src/core/entities/users/user.dto';
+import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UpdateUserDto, UsersListingDto } from 'src/core/entities/users/user.dto';
 import { User } from 'src/core/entities/users/user.entity';
 
 @Injectable()
@@ -118,6 +118,98 @@ export class UsersService {
         `Error while updating user push tokens. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async list(filter: UsersListingDto): Promise<Result> {
+    try {
+      const { limit, page } = filter;
+      const skip = (page - 1) * limit;
+      const company = await this.dataServices.companies.findOne(
+        filter.company,
+        '_id',
+      );
+      if (!company) {
+        return fail({
+          message: 'Company not found',
+          error: 'Company not found',
+        })
+      }
+      const result = await this.dataServices.users.list({
+        companiesId: [company['_id']],
+        skip,
+        limit,
+        roles: filter.roles,
+      });
+      if (!result?.length) {
+        return succeed({
+          code: HttpStatus.OK,
+          message: '',
+          data: {
+            total: 0,
+            users: [],
+          },
+        });
+      }
+      const total = result[0].total;
+      const users = result.flatMap(i => ({
+        ...i.users,
+        total: undefined,
+      }));
+      return succeed({
+        data: { users, total }
+      })
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException("Error while getting users list", HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  async removeUser(data: RemoveUserDto):  Promise<Result> {
+    try {
+      const [by, user] = await Promise.all([
+        this.dataServices.users.findOne(data.by, '_id company isDeleted isActive account_type'),
+        this.dataServices.users.findOne(data.user, '_id code company'),
+      ]);
+
+      if (!by || !user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found',
+          error: 'Not found!',
+        });
+      }
+      if (!by.isActive || by.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This account is no longer active',
+          error: 'Bad request',
+        });
+      }
+      if (by.account_type !== EAccountType.ADMIN) {
+        return fail({
+          message: 'You cannot do this action',
+          error: 'You cannot do this action'
+        });
+      }
+      if (by.company.toString() !== user.company.toString()) {
+        return fail({
+          message: 'You cannot do this action',
+          error: 'You cannot do this action'
+        });
+      }
+      await this.dataServices.users.update(user.code, {
+        isDeleted: true,
+        lastUpdatedBy: by['_id'],
+        lastUpdatedDate: new Date()
+      });
+      return succeed({
+        message: 'User removed!',
+        data: {}
+      })
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException("Error while removing user", HttpStatus.INTERNAL_SERVER_ERROR)
     }
   }
 }

@@ -14,6 +14,8 @@ import {
   EUserGender,
   UserCodeValidator,
 } from 'src/features/users/users.helper';
+import { PaginationDto } from '../shared/pagination.dto';
+import { CompanyCodeValidator } from 'src/features/companies/companies.helper';
 
 export class NewUserDto {
   @IsNotEmpty({ message: 'User is required.' })
@@ -96,6 +98,10 @@ export class UserCodeDto {
 }
 
 export class UpdateUserDto {
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
   @IsOptional()
   @IsNotEmpty({ message: 'User first name is required.' })
   @IsString()
@@ -185,4 +191,26 @@ export class AuthDto {
 export class TokenVerificationDto {
   @IsNotEmpty({ message: 'Value cannot be empty ' })
   token: string;
+}
+
+export class UsersListingDto extends PaginationDto {
+  @IsNotEmpty({ message: "Company is required "})
+  @Validate(CompanyCodeValidator)
+  company: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true})
+  roles: string[];
+}
+
+export class RemoveUserDto {
+  @IsNotEmpty({ message: 'User who makes action is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  user: string;
 }
