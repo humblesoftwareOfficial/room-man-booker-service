@@ -64,4 +64,19 @@ export class ReservationsController {
   async list(@Body() value: ReservationListDto) {
     return this.service.list(value);
   }
+
+  @ApiCreatedResponse({
+    description: 'New reservation successfully registered.',
+    type: Reservation,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @Post('/request')
+  async reservationRequest(@Body() value: NewReservationDto) {
+    return this.service.reservationRequest(value);
+  }
 }

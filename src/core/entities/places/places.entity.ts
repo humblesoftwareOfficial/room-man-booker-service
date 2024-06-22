@@ -73,6 +73,9 @@ export class Place extends DefaultAttributes {
 
   @Prop({ type: String, enum: EPlaceStatus, default: EPlaceStatus.AVAILABLE })
   currentStatus?: EPlaceStatus;
+
+  @Prop({ type: [Types.ObjectId], ref: 'Reservation', default: [] })
+  reservationsRequests?: Reservation[] | Types.ObjectId[];
 }
 
 export const PlaceSchema = SchemaFactory.createForClass(Place);

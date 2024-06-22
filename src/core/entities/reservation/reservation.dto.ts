@@ -13,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { IsValidDate, IsValidFullDate } from 'src/features/helpers/date.helper';
-import { PlaceCodeValidator } from 'src/features/places/places.helper';
+import { ArrayPlaceCodesValidator, PlaceCodeValidator } from 'src/features/places/places.helper';
 import { ArrayReservationStatusValidator, EReservationDuration, EReservationStatus, ReservationCodeValidator } from 'src/features/reservations/reservations.helper';
 import { PlacePricePriceDto } from '../places/places.dto';
 import { UserCodeValidator } from 'src/features/users/users.helper';
@@ -56,20 +56,22 @@ export class NewReservationDto {
   @IsInt()
   price: number;
 
-  // @Validate(IsValidDate)
-  // startDate: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Validate(IsValidDate)
+  startDate: string;
 
-  // @ApiProperty({ required: false })
-  // @IsOptional()
-  // @Validate(IsValidDate)
-  // endDate: string;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Validate(IsValidDate)
+  endDate: string;
 
-  // @ApiProperty({ required: false })
-  // @IsOptional()
-  // @IsEnum(EReservationDuration, {
-  //   message: 'reservation duration must be a valid EReservationDuration value',
-  // })
-  // duration: EReservationDuration;
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsEnum(EReservationDuration, {
+    message: 'reservation duration must be a valid EReservationDuration value',
+  })
+  duration: EReservationDuration;
 }
 
 export class UpdateReservationDto {
@@ -157,4 +159,12 @@ export class ReservationListDto extends PaginationDto {
   @IsNotEmpty({ message: 'User is required.' })
   @Validate(UserCodeValidator)
   by: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @Validate(ArrayPlaceCodesValidator)
+  places: string[]
 }
+
+export class ReservationRequestDto extends NewReservationDto {}

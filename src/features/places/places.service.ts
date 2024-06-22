@@ -13,6 +13,8 @@ import {
 import { Place } from 'src/core/entities/places/places.entity';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import { stringToDate } from '../helpers/date.helper';
+import { EPlaceStatus } from './places.helper';
+import { EReservationStatus } from '../reservations/reservations.helper';
 
 @Injectable()
 export class PlacesService {
@@ -314,6 +316,16 @@ export class PlacesService {
         lastUpdatedBy: user['_id'],
       };
       await this.dataServices.places.update(place.code, update);
+      if (value.currentStatus === EPlaceStatus.AVAILABLE) {
+        await this.dataServices.reservations.updateWithFilterObject({
+          place: place['_id'],
+          status: EReservationStatus.IN_PROGRESS,
+        }, {
+          status: EReservationStatus.ENDED,
+          lastUpdatedAt: new Date(),
+          lastUpdatedBy: user['_id']
+        })
+      }
       return succeed({
         code: HttpStatus.OK,
         data: {},

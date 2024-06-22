@@ -1,4 +1,5 @@
 import {
+  EReservationStatus,
   IPlaceCAAmount,
   IReservationList,
   IReservationsByPlace,
@@ -14,13 +15,13 @@ const PopulateOptions = [
     select: '-_id -__v -createdBy -lastUpdatedBy -reservations',
     populate: [
       {
-        path: 'enterprise',
+        path: 'company',
         select: '-_id code name description',
       },
     ],
   },
   {
-    path: 'enterprise',
+    path: 'company',
     select: '-_id code name description',
   },
 ];
@@ -39,6 +40,7 @@ export class ReservationRepository<T>
         {
           $match: {
             place: { $in: places },
+            status: { $in: [EReservationStatus.IN_PROGRESS,EReservationStatus.ENDED]},
             isDeleted: false,
             ...(startDate &&
               endDate && {
@@ -91,7 +93,7 @@ export class ReservationRepository<T>
     limit,
     skip,
     status,
-    enterprisesId,
+    companiesId,
     placesId,
   }: IReservationList): Promise<any[]> {
     return this._repository
@@ -101,8 +103,8 @@ export class ReservationRepository<T>
             ...(status?.length && {
               status: { $in: status },
             }),
-            ...(enterprisesId?.length && {
-              enterprise: { $in: enterprisesId },
+            ...(companiesId?.length && {
+              company: { $in: companiesId },
             }),
             ...(placesId?.length && {
               place: { $in: placesId },

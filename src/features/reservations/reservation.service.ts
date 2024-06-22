@@ -5,6 +5,7 @@ import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import {
   NewReservationDto,
   ReservationListDto,
+  ReservationRequestDto,
   UpdateReservationDto,
 } from 'src/core/entities/reservation/reservation.dto';
 import { Result, fail, succeed } from 'src/config/http-response';
@@ -74,9 +75,9 @@ export class ReservationsService {
           tokenValue: value.tokenValue,
           identification: value.identification,
         },
-        startDate: operationDate, //stringToDate(value.startDate),
-        // endDate: value.endDate ? stringToDate(value.endDate) : null,
-        // duration: value.duration,
+        startDate: value.startDate ? stringToDate(value.startDate): null,
+        endDate: value.endDate ? stringToDate(value.endDate) : null,
+        duration: value.duration,
         place: place['_id'],
         company: place.company,
         house: place.house,
@@ -114,26 +115,23 @@ export class ReservationsService {
         ),
       ]);
       const messages = [];
-      for (let i = 0; i < users.length; i++) {
-        if (users[i].code === value.by) {
+      for (const user of users) {
+        if (user.code === value.by) {
           let mustReceiveNotification = false;
-          if (users[i].account_type === EAccountType.ADMIN) {
-            mustReceiveNotification = true;
-          } else if (
-            users[i].account_type === EAccountType.SUPERVISOR &&
-            users[i].house?.toString() === place.house.toString()
-          ) {
+          if ((user.account_type === EAccountType.ADMIN) || (
+            user.account_type === EAccountType.SUPERVISOR &&
+            user.house?.toString() === place.house.toString()
+          )) {
             mustReceiveNotification = true;
           }
-          const user = users[i];
           if (mustReceiveNotification) {
-            for (let j = 0; j < user.push_tokens.length; j++) {
-              const pushToken = user.push_tokens[j];
+            for (const pushToken of user.push_tokens) {
               if (!Expo.isExpoPushToken(pushToken)) continue;
               messages.push({
                 to: pushToken,
                 sound: 'default',
                 title: `${company.name} • ${house.name}`,
+                subtitle: 'Réservation',
                 body: `Nouvelle reservation au nom de: ${value.firstName} ${value.lastName}`,
                 data: { withSome: `${value.phone}` },
               });
@@ -289,7 +287,7 @@ export class ReservationsService {
     try {
       const user = await this.dataServices.users.findOne(
         filter.by,
-        '_id enterprise accountType',
+        '_id company account_type',
       );
       if (!user) {
         return fail({
@@ -305,12 +303,23 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      if (!user.enterprise && user.accountType !== EAccountType.SUPER_ADMIN) {
+      if (!user.company && user.account_type !== EAccountType.SUPER_ADMIN) {
         return fail({
           code: HttpStatus.BAD_REQUEST,
-          message: 'Bas request!',
+          message: 'Bad request!',
           error: 'Bad request',
         });
+      }
+      let places = []
+      if (filter.places?.length) {
+        places = await this.dataServices.places.findAllByCodes(filter.places, '_id');
+        if (!places.length) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'laces not found',
+            error: 'Not found',
+          });
+        }
       }
       const { limit, page } = filter;
       const skip = (page - 1) * limit;
@@ -318,9 +327,10 @@ export class ReservationsService {
         limit: limit,
         skip,
         status: filter.status,
-        enterprisesId: user.enterprise
-          ? [user.enterprise as Types.ObjectId]
+        companiesId: user.company
+          ? [user.company as Types.ObjectId]
           : [],
+        placesId: places?.length ? places.flatMap((o) => o['_id']): []
       });
       if (!result.length) {
         return succeed({
@@ -346,6 +356,136 @@ export class ReservationsService {
       console.log({ error });
       throw new HttpException(
         `Error while getting reservations. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async reservationRequest(value: ReservationRequestDto): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        value.by,
+        '_id code company isDeleted isActive',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found!',
+          error: 'Not found!',
+        });
+      }
+      if (!user.isActive || user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This account is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const place = await this.dataServices.places.findOne(
+        value.place,
+        '_id code isDeleted company description house',
+      );
+      if (!place) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'place not found!',
+          error: 'Not found',
+        });
+      }
+      if (place.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This place is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const operationDate = new Date();
+      const newReservation: Reservation = {
+        code: codeGenerator('RES'),
+        createdAt: operationDate,
+        lastUpdatedAt: operationDate,
+        status: EReservationStatus.ON_REQUEST,
+        user: {
+          firstName: value.firstName,
+          lastName: value.lastName,
+          phone: value.phone,
+          tokenValue: value.tokenValue,
+          identification: value.identification,
+        },
+        startDate: stringToDate(value.startDate),
+        endDate: value.endDate ? stringToDate(value.endDate) : null,
+        duration: value.duration,
+        place: place['_id'],
+        company: place.company,
+        house: place.house,
+        ...(hasValue(value.price) && {
+          price: {
+            description: '',
+            devise: EDevise.FCFA,
+            value: value.price,
+          },
+        }),
+      };
+      const createdReservationRequest = await this.dataServices.reservations.create(
+        newReservation,
+      );
+      await this.dataServices.places.update(place.code, {
+        $addToSet: {
+          reservationsRequests: createdReservationRequest['_id'],
+        },
+      });
+      /*******NOTIFICATIONS ***************/
+      const [users, company, house] = await Promise.all([
+        this.dataServices.users.findUsersByCompany(
+          place.company as Types.ObjectId,
+          '_id code push_tokens account_type firstName company house',
+        ),
+        this.dataServices.companies.findById(
+          place.company as Types.ObjectId,
+          '_id code name',
+        ),
+        this.dataServices.houses.findById(
+          place.house as Types.ObjectId,
+          '_id code name',
+        ),
+      ]);
+      const messages = [];
+      for (const user of users) {
+        if (user.code === value.by) {
+          let mustReceiveNotification = false;
+          if ((user.account_type === EAccountType.ADMIN) || (
+            user.account_type === EAccountType.SUPERVISOR &&
+            user.house?.toString() === place.house.toString()
+          )) {
+            mustReceiveNotification = true;
+          }
+          if (mustReceiveNotification) {
+            for (const pushToken of user.push_tokens) {
+              if (!Expo.isExpoPushToken(pushToken)) continue;
+              messages.push({
+                to: pushToken,
+                sound: 'default',
+                title: `${company.name} • ${house.name}`,
+                subtitle: 'Demande de Réservation',
+                body: `Nouvelle demande de reservation au nom de: ${value.firstName} ${value.lastName}.`,
+                data: { withSome: `${value.phone}` },
+              });
+            }
+          }
+        }
+      }
+      __sendPushNotifications(messages);
+      /*******NOTIFICATIONS ***************/
+      return succeed({
+        code: HttpStatus.OK,
+        data: {
+          status: EReservationStatus.ON_REQUEST,
+        },
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while registering new reservation request. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

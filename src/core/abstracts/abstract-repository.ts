@@ -49,8 +49,8 @@ export class MongoGenericRepository<T> implements IGenericRepository<T> {
     return this._repository.findOneAndUpdate(query, update, { new: true, session }).exec();
   }
 
-  updateWithFilterObject(filter: any, update: any): Promise<T> {
-    return this._repository.findOneAndUpdate({ ...filter }, update, { new: true }).exec();
+  updateWithFilterObject(filter: any, update: any): Promise<any> {
+    return this._repository.updateMany({ ...filter }, update, { new: true }).exec();
   }
 
   updateWithFilterObjectInTransaction(filter: any, update: any, session: ClientSession): Promise<T> {

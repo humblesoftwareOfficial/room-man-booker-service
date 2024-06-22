@@ -59,7 +59,7 @@ export interface IReservationList {
   status?: EReservationStatus[];
   skip: number;
   limit: number;
-  enterprisesId?: Types.ObjectId[];
+  companiesId?: Types.ObjectId[];
   placesId?: Types.ObjectId[];
 }
 
@@ -67,6 +67,7 @@ export enum EReservationDuration {
   DAY = 'DAY',
   HALF_DAY = 'HALF_DAY',
   NIGHT = 'NIGHT',
+  LONG_TIME = 'LONG_TIME',
 }
 
 export interface IReservationsByPlace {
