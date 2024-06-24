@@ -49,7 +49,7 @@ export class PlacesService {
       }
       const house = await this.dataServices.houses.findOne(
         value.house,
-        '_id code company isDeleted',
+        '_id code company position isDeleted',
       );
       if (!house) {
         return fail({
@@ -102,7 +102,7 @@ export class PlacesService {
         prices: value.prices,
         company: company['_id'],
         star: value.star,
-        position: value.position,
+        position: house.position,
         properties: value.properties,
         type: value.type,
         medias: value.medias?.flatMap((o) => ({
