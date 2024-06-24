@@ -18,6 +18,7 @@ import {
   UserCodeValidator,
 } from 'src/features/users/users.helper';
 import { PaginationDto } from '../shared/pagination.dto';
+import { PositionDto } from '../places/places.dto';
 
 export class HouseUserDto {
   @IsNotEmpty({ message: 'User first name is required.' })
@@ -79,11 +80,20 @@ export class NewHouseDto {
   @IsString()
   address: string;
 
-
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   description: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNotEmptyObject(
+    { nullable: false },
+    { message: 'Poistion value cannot be empty' },
+  )
+  @ValidateNested()
+  @Type(() => PositionDto)
+  position: PositionDto;
 }
 
 export class AddUserToHouseDto {

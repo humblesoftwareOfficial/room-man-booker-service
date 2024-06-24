@@ -5,6 +5,7 @@ import { DefaultAttributes } from '../shared/default-attributes.entity';
 import { User } from '../users/user.entity';
 import { Company } from '../companies/companies.entity';
 import { Place } from '../places/places.entity';
+import { PlaceLocation } from '../places/place-location.entity';
 
 export type HouseDocument = House & Document;
 
@@ -33,6 +34,9 @@ export class House extends DefaultAttributes {
 
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   lastUpdatedBy?: User | Types.ObjectId;
+
+  @Prop({ type: PlaceLocation, required: false, default: null })
+  position?: PlaceLocation;
 }
 
 export const HouseSchema = SchemaFactory.createForClass(House);

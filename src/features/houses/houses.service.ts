@@ -84,6 +84,7 @@ export class HousesService {
         createdAt: new Date(),
         createdBy: by['_id'],
         lastUpdatedBy: by['_id'],
+        position: data.position,
       };
       const createdHouse = await this.dataServices.houses.create(house);
       await this.dataServices.companies.linkHousesToCompany(
