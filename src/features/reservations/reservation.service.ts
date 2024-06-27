@@ -343,6 +343,7 @@ export class ReservationsService {
       const reservations = result.flatMap((i) => ({
         ...i.reservations,
         total: undefined,
+        house: undefined,
       }));
       await this.dataServices.reservations.populateReservationInfos(
         reservations,

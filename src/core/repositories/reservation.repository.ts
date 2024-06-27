@@ -15,6 +15,10 @@ const PopulateOptions = [
     select: '-_id -__v -createdBy -lastUpdatedBy -reservations',
     populate: [
       {
+        path: 'house',
+        select: '-_id code name description',
+      },
+      {
         path: 'company',
         select: '-_id code name description',
       },
