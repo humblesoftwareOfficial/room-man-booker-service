@@ -605,7 +605,7 @@ export class ReservationsService {
       ]);
       const messages = [];
       for (const user of users) {
-        if (true) {//user.code === authorAction
+        if (user.code === authorAction) {
           let mustReceiveNotification = false;
           if ((user.account_type === EAccountType.ADMIN) || (
             user.account_type === EAccountType.SUPERVISOR &&
