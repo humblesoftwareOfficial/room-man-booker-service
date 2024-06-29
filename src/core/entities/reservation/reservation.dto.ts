@@ -168,3 +168,23 @@ export class ReservationListDto extends PaginationDto {
 }
 
 export class ReservationRequestDto extends NewReservationDto {}
+
+export class AcceptReservationRequestDto {
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
+  @IsNotEmpty({ message: 'Reservation is required.' })
+  @Validate(ReservationCodeValidator)
+  reservation: string;
+}
+
+export class DeclineReservationRequestDto {
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
+  @IsNotEmpty({ message: 'Reservation is required.' })
+  @Validate(ReservationCodeValidator)
+  reservation: string;
+}

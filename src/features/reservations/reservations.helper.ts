@@ -78,9 +78,9 @@ export interface IReservationsByPlace {
 }
 
 export interface IPlaceCAAmount {
-  places: Types.ObjectId[],
-  startDate?: Date,
-  endDate?: Date,
+  places: Types.ObjectId[];
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export const getReservationUpdateStatusMessage = (
@@ -104,3 +104,15 @@ export const getReservationUpdateStatusMessage = (
     return 'Réservation mise à jour';
   }
 };
+
+export interface ISendPushNotifications {
+  companyId: Types.ObjectId;
+  houseId: Types.ObjectId;
+  authorAction: string;
+  client: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+  },
+  notificationType: string;
+}

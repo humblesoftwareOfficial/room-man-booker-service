@@ -16,7 +16,7 @@ const PopulateOptions = [
     populate: [
       {
         path: 'house',
-        select: '-_id code name description',
+        select: '-_id code name description position address',
       },
       {
         path: 'company',

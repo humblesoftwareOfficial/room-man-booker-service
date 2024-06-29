@@ -8,7 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../authentication/jwt.auth.guard';
 import { Reservation } from 'src/core/entities/reservation/reservation.entity';
-import { NewReservationDto, ReservationListDto, UpdateReservationDto } from 'src/core/entities/reservation/reservation.dto';
+import { AcceptReservationRequestDto, NewReservationDto, ReservationListDto, UpdateReservationDto } from 'src/core/entities/reservation/reservation.dto';
 
 
 @ApiTags('Reservation')
@@ -78,5 +78,35 @@ export class ReservationsController {
   @Post('/request')
   async reservationRequest(@Body() value: NewReservationDto) {
     return this.service.reservationRequest(value);
+  }
+
+  @ApiCreatedResponse({
+    description: 'New reservation successfully registered.',
+    type: Reservation,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @Post('/accept-request')
+  async acceptReservationRequest(@Body() value: AcceptReservationRequestDto) {
+    return this.service.acceptReservationRequest(value);
+  }
+
+  @ApiCreatedResponse({
+    description: 'New reservation successfully registered.',
+    type: Reservation,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @Post('/decline-request')
+  async declineReservationRequest(@Body() value: AcceptReservationRequestDto) {
+    return this.service.declineReservationRequest(value);
   }
 }

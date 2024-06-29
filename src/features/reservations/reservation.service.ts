@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 import Expo from 'expo-server-sdk';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import {
+  AcceptReservationRequestDto,
+  DeclineReservationRequestDto,
   NewReservationDto,
   ReservationListDto,
   ReservationRequestDto,
@@ -13,6 +15,7 @@ import { Reservation } from 'src/core/entities/reservation/reservation.entity';
 import { codeGenerator, hasValue } from 'src/config/code-generator';
 import {
   EReservationStatus,
+  ISendPushNotifications,
   getReservationUpdateStatusMessage,
 } from './reservations.helper';
 import { stringToDate, stringToFullDate } from '../helpers/date.helper';
@@ -100,46 +103,17 @@ export class ReservationsService {
       });
 
       /*******NOTIFICATIONS ***************/
-      const [users, company, house] = await Promise.all([
-        this.dataServices.users.findUsersByCompany(
-          place.company as Types.ObjectId,
-          '_id code push_tokens account_type firstName company house',
-        ),
-        this.dataServices.companies.findById(
-          place.company as Types.ObjectId,
-          '_id code name',
-        ),
-        this.dataServices.houses.findById(
-          place.house as Types.ObjectId,
-          '_id code name',
-        ),
-      ]);
-      const messages = [];
-      for (const user of users) {
-        if (user.code === value.by) {
-          let mustReceiveNotification = false;
-          if ((user.account_type === EAccountType.ADMIN) || (
-            user.account_type === EAccountType.SUPERVISOR &&
-            user.house?.toString() === place.house.toString()
-          )) {
-            mustReceiveNotification = true;
-          }
-          if (mustReceiveNotification) {
-            for (const pushToken of user.push_tokens) {
-              if (!Expo.isExpoPushToken(pushToken)) continue;
-              messages.push({
-                to: pushToken,
-                sound: 'default',
-                title: `${company.name} • ${house.name}`,
-                subtitle: 'Réservation',
-                body: `Nouvelle reservation au nom de: ${value.firstName} ${value.lastName}`,
-                data: { withSome: `${value.phone}` },
-              });
-            }
-          }
-        }
-      }
-      __sendPushNotifications(messages);
+      this.__pushNotifications({
+        client: {
+          firstName: value.firstName,
+          lastName: value.lastName,
+          phone: value.phone,
+        },
+        companyId: place.company,
+        houseId: place.house,
+        authorAction: value.by,
+        notificationType: "Nouvelle Réservation"
+      })
       /*******NOTIFICATIONS ***************/
       return succeed({
         code: HttpStatus.OK,
@@ -224,7 +198,6 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-
       const update = {
         lastUpdatedAt: new Date(),
         lastUpdatedBy: user['_id'],
@@ -251,21 +224,6 @@ export class ReservationsService {
         price: value.price || reservation.price,
       };
       await this.dataServices.reservations.update(reservation.code, update);
-      //   if (
-      //     value.status &&
-      //     reservation.user.tokenValue &&
-      //     Expo.isExpoPushToken(reservation.user.tokenValue)
-      //   ) {
-      //     const messages = [];
-      //     messages.push({
-      //       to: reservation.user.tokenValue,
-      //       sound: 'default',
-      //       title: `Heberease • Réservation`,
-      //       body: getReservationUpdateStatusMessage(value.status),
-      //       data: { withSome: `${value.phone}` },
-      //     });
-      //     __sendPushNotifications(messages);
-      //   }
 
       return succeed({
         code: HttpStatus.OK,
@@ -436,46 +394,17 @@ export class ReservationsService {
         },
       });
       /*******NOTIFICATIONS ***************/
-      const [users, company, house] = await Promise.all([
-        this.dataServices.users.findUsersByCompany(
-          place.company as Types.ObjectId,
-          '_id code push_tokens account_type firstName company house',
-        ),
-        this.dataServices.companies.findById(
-          place.company as Types.ObjectId,
-          '_id code name',
-        ),
-        this.dataServices.houses.findById(
-          place.house as Types.ObjectId,
-          '_id code name',
-        ),
-      ]);
-      const messages = [];
-      for (const user of users) {
-        if (user.code === value.by) {
-          let mustReceiveNotification = false;
-          if ((user.account_type === EAccountType.ADMIN) || (
-            user.account_type === EAccountType.SUPERVISOR &&
-            user.house?.toString() === place.house.toString()
-          )) {
-            mustReceiveNotification = true;
-          }
-          if (mustReceiveNotification) {
-            for (const pushToken of user.push_tokens) {
-              if (!Expo.isExpoPushToken(pushToken)) continue;
-              messages.push({
-                to: pushToken,
-                sound: 'default',
-                title: `${company.name} • ${house.name}`,
-                subtitle: 'Demande de Réservation',
-                body: `Nouvelle demande de reservation au nom de: ${value.firstName} ${value.lastName}.`,
-                data: { withSome: `${value.phone}` },
-              });
-            }
-          }
-        }
-      }
-      __sendPushNotifications(messages);
+      this.__pushNotifications({
+        client: {
+          firstName: value.firstName,
+          lastName: value.lastName,
+          phone: value.phone,
+        },
+        companyId: place.company,
+        houseId: place.house,
+        authorAction: value.by,
+        notificationType: 'Demande de réservation'
+      })
       /*******NOTIFICATIONS ***************/
       return succeed({
         code: HttpStatus.OK,
@@ -489,6 +418,219 @@ export class ReservationsService {
         `Error while registering new reservation request. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async acceptReservationRequest(value: AcceptReservationRequestDto): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        value.by,
+        '_id code company isDeleted isActive',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found!',
+          error: 'Not found!',
+        });
+      }
+      if (!user.isActive || user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This account is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const reservation = await this.dataServices.reservations.findOne(
+        value.reservation,
+        '-__v',
+      );
+      if (reservation.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'Reservation not found',
+          error: 'Bad request',
+        });
+      }
+      if (reservation.status !== EReservationStatus.ON_REQUEST) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: `You cannot accept a reservation with the status: ${reservation.status}`,
+          error: 'Bad request',
+        });
+      }
+      if (reservation.company.toString() !== user.company.toString()) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: `You cannot do this action`,
+          error: 'Bad request',
+        });
+      }
+      const place = await this.dataServices.places.findById(reservation.place, '_id code house company');
+
+      await Promise.all([
+        this.dataServices.places.update(place.code, {
+          currentStatus: EPlaceStatus.TAKEN,
+          $addToSet: {
+            reservations: reservation['_id'],
+          },
+        }),
+        this.dataServices.reservations.update(reservation.code, {
+          status: EReservationStatus.IN_PROGRESS,
+          lastUpdatedAt: new Date(),
+          lastUpdatedBy: user['_id'],
+        })
+      ])
+      /*******NOTIFICATIONS ***************/
+      this.__pushNotifications({
+        client: {
+          firstName: reservation.user.firstName,
+          lastName: reservation.user.lastName,
+          phone: reservation.user.phone,
+        },
+        companyId: place.company,
+        houseId: place.house,
+        authorAction: value.by,
+        notificationType: 'Demande de réservation acceptée'
+      })
+      /*******NOTIFICATIONS ***************/
+      return succeed({
+        data: {},
+        message: 'Reservation started.'
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while accepting reservation request. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async declineReservationRequest(value: DeclineReservationRequestDto): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        value.by,
+        '_id code company isDeleted isActive',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found!',
+          error: 'Not found!',
+        });
+      }
+      if (!user.isActive || user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This account is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const reservation = await this.dataServices.reservations.findOne(
+        value.reservation,
+        '-__v',
+      );
+      if (reservation.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'Reservation not found',
+          error: 'Bad request',
+        });
+      }
+      if (reservation.status !== EReservationStatus.ON_REQUEST) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: `You cannot accept a reservation with the status: ${reservation.status}`,
+          error: 'Bad request',
+        });
+      }
+      if (reservation.company.toString() !== user.company.toString()) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: `You cannot do this action`,
+          error: 'Bad request',
+        });
+      }
+      const place = await this.dataServices.places.findById(reservation.place, '_id code house company');
+
+      await Promise.all([
+        this.dataServices.reservations.update(reservation.code, {
+          status: EReservationStatus.CANCELLED,
+          lastUpdatedAt: new Date(),
+          lastUpdatedBy: user['_id'],
+        })
+      ])
+      /*******NOTIFICATIONS ***************/
+      this.__pushNotifications({
+        client: {
+          firstName: reservation.user.firstName,
+          lastName: reservation.user.lastName,
+          phone: reservation.user.phone,
+        },
+        companyId: place.company,
+        houseId: place.house,
+        authorAction: value.by,
+        notificationType: 'Réservation annulée'
+      })
+      /*******NOTIFICATIONS ***************/
+      return succeed({
+        data: {},
+        message: 'Reservation started.'
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while accepting reservation request. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async __pushNotifications({ companyId, houseId, authorAction, client, notificationType }: ISendPushNotifications) {
+    try {
+      const [users, company, house] = await Promise.all([
+        this.dataServices.users.findUsersByCompany(
+          companyId as Types.ObjectId,
+          '_id code push_tokens account_type firstName company house',
+        ),
+        this.dataServices.companies.findById(
+          companyId as Types.ObjectId,
+          '_id code name',
+        ),
+        this.dataServices.houses.findById(
+          houseId as Types.ObjectId,
+          '_id code name',
+        ),
+      ]);
+      const messages = [];
+      for (const user of users) {
+        if (user.code === authorAction) {
+          let mustReceiveNotification = false;
+          if ((user.account_type === EAccountType.ADMIN) || (
+            user.account_type === EAccountType.SUPERVISOR &&
+            user.house?.toString() === houseId.toString()
+          )) {
+            mustReceiveNotification = true;
+          }
+          if (mustReceiveNotification) {
+            for (const pushToken of user.push_tokens) {
+              if (!Expo.isExpoPushToken(pushToken)) continue;
+              messages.push({
+                to: pushToken,
+                sound: 'default',
+                title: `${company.name} • ${house.name}`,
+                subtitle: notificationType,
+                body: `${notificationType} au nom de: ${client.firstName} ${client.lastName}`,
+                data: { withSome: `${client.phone}` },
+              });
+            }
+          }
+        }
+      }
+      __sendPushNotifications(messages);
+    } catch (error) {
+      console.log({ error })
     }
   }
 }
