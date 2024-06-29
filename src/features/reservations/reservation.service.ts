@@ -603,16 +603,21 @@ export class ReservationsService {
           '_id code name',
         ),
       ]);
+      // console.log({ users })
       const messages = [];
       for (const user of users) {
-        if (user.code === authorAction) {
+        if (true) { //user.code !== authorAction
           let mustReceiveNotification = false;
           if ((user.account_type === EAccountType.ADMIN) || (
             user.account_type === EAccountType.SUPERVISOR &&
             user.house?.toString() === houseId.toString()
           )) {
             mustReceiveNotification = true;
-          }
+          } 
+          // else {
+          //   console.log(`user house ${ user.house?.toString()} --- house: ${houseId.toString()}`)
+          // }
+
           if (mustReceiveNotification) {
             for (const pushToken of user.push_tokens) {
               if (!Expo.isExpoPushToken(pushToken)) continue;
@@ -628,7 +633,7 @@ export class ReservationsService {
           }
         }
       }
-      __sendPushNotifications(messages);
+      // __sendPushNotifications(messages);
     } catch (error) {
       console.log({ error })
     }
