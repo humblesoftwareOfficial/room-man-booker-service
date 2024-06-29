@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import Expo from 'expo-server-sdk';
 import * as bcrypt from 'bcrypt';
 import { Result, fail, succeed } from 'src/config/http-response';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
@@ -16,6 +16,7 @@ import {
   NewHouseDto,
 } from 'src/core/entities/houses/houses.dto';
 import { House } from 'src/core/entities/houses/houses.entity';
+import { __sendPushNotifications } from 'src/config/notifications';
 
 @Injectable()
 export class HousesService {
@@ -119,7 +120,7 @@ export class HousesService {
     try {
       const by = await this.dataServices.users.findOne(
         data.by,
-        '_id code account_type isActive isDeleted company',
+        '_id code account_type isActive isDeleted company push_tokens',
       );
       if (!by) {
         return fail({
@@ -144,7 +145,7 @@ export class HousesService {
       }
       const house = await this.dataServices.houses.findOne(
         data.house,
-        '_id code company',
+        '_id code company name',
       );
       if (!house) {
         return fail({
@@ -181,7 +182,14 @@ export class HousesService {
           }
         })
       ]);
-
+      this.__pushNotificationsNewSupervisor(
+        by,
+        house,
+        {
+          ...data.user,
+        },
+        user.password,
+      )
       return succeed({
         code: HttpStatus.CREATED,
         data: {
@@ -268,5 +276,25 @@ export class HousesService {
     };
     const createdUser = await this.dataServices.users.create(user);
     return { createdUser, password };
+  }
+
+  __pushNotificationsNewSupervisor(user: any, house: any, supervisor: any, password) {
+    try {
+      const messages = [];
+      for (const pushToken of user.push_tokens) {
+        if (!Expo.isExpoPushToken(pushToken)) continue;
+        messages.push({
+          to: pushToken,
+          sound: 'default',
+          title: `Nouveau superviseur • ${house.name}`,
+          subtitle: "Nouveau compte",
+          body: `Nouveau superviseur: ${supervisor.firstName} ${supervisor.lastName}. Mot de passe: ${password}`,
+          data: { withSome: `${supervisor.phone}` },
+        });
+      }
+      __sendPushNotifications(messages);
+    } catch (error) {
+      console.log({ error })
+    }
   }
 }
