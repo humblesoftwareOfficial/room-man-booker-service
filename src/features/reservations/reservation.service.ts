@@ -669,7 +669,7 @@ export class ReservationsService {
           }
         }
       }
-      // __sendPushNotifications(messages);
+       __sendPushNotifications(messages);
     } catch (error) {
       console.log({ error });
     }
