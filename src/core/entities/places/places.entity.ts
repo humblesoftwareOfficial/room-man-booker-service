@@ -74,6 +74,9 @@ export class Place extends DefaultAttributes {
   @Prop({ type: String, enum: EPlaceStatus, default: EPlaceStatus.AVAILABLE })
   currentStatus?: EPlaceStatus;
 
+  @Prop({ type: Types.ObjectId, ref: 'Reservation', default: null })
+  reservation?: Reservation | Types.ObjectId;
+
   @Prop({ type: [Types.ObjectId], ref: 'Reservation', default: [] })
   reservationsRequests?: Reservation[] | Types.ObjectId[];
 }

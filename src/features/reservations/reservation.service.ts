@@ -70,7 +70,7 @@ export class ReservationsService {
         code: codeGenerator('RES'),
         createdAt: operationDate,
         lastUpdatedAt: operationDate,
-        status: EReservationStatus.IN_PROGRESS,
+        status: EReservationStatus.ACCEPTED,
         user: {
           firstName: value.firstName,
           lastName: value.lastName,
@@ -78,7 +78,7 @@ export class ReservationsService {
           tokenValue: value.tokenValue,
           identification: value.identification,
         },
-        startDate: value.startDate ? stringToDate(value.startDate): null,
+        startDate: value.startDate ? stringToDate(value.startDate) : null,
         endDate: value.endDate ? stringToDate(value.endDate) : null,
         duration: value.duration,
         place: place['_id'],
@@ -96,13 +96,11 @@ export class ReservationsService {
         newReservation,
       );
       await this.dataServices.places.update(place.code, {
-        currentStatus: EPlaceStatus.TAKEN,
+        // currentStatus: EPlaceStatus.TAKEN,
         $addToSet: {
           reservations: createdReservation['_id'],
         },
       });
-
-      /*******NOTIFICATIONS ***************/
       this.__pushNotifications({
         client: {
           firstName: value.firstName,
@@ -112,9 +110,9 @@ export class ReservationsService {
         companyId: place.company,
         houseId: place.house,
         authorAction: value.by,
-        notificationType: "Nouvelle Réservation"
-      })
-      /*******NOTIFICATIONS ***************/
+        notificationType: 'Nouvelle Réservation',
+        message: `Nouvelle réservation enregistrée au nom de: ${value.firstName} ${value.lastName}`,
+      });
       return succeed({
         code: HttpStatus.OK,
         data: {
@@ -201,7 +199,7 @@ export class ReservationsService {
       const update = {
         lastUpdatedAt: new Date(),
         lastUpdatedBy: user['_id'],
-        status: value.status || reservation.status,
+        // status: value.status || reservation.status,
         duration: value.duration || reservation.duration,
         user: {
           firstName: value.firstName || reservation.user.firstName,
@@ -268,9 +266,12 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      let places = []
+      let places = [];
       if (filter.places?.length) {
-        places = await this.dataServices.places.findAllByCodes(filter.places, '_id');
+        places = await this.dataServices.places.findAllByCodes(
+          filter.places,
+          '_id',
+        );
         if (!places.length) {
           return fail({
             code: HttpStatus.NOT_FOUND,
@@ -285,10 +286,8 @@ export class ReservationsService {
         limit: limit,
         skip,
         status: filter.status,
-        companiesId: user.company
-          ? [user.company as Types.ObjectId]
-          : [],
-        placesId: places?.length ? places.flatMap((o) => o['_id']): []
+        companiesId: user.company ? [user.company as Types.ObjectId] : [],
+        placesId: places?.length ? places.flatMap((o) => o['_id']) : [],
       });
       if (!result.length) {
         return succeed({
@@ -385,15 +384,13 @@ export class ReservationsService {
           },
         }),
       };
-      const createdReservationRequest = await this.dataServices.reservations.create(
-        newReservation,
-      );
+      const createdReservationRequest =
+        await this.dataServices.reservations.create(newReservation);
       await this.dataServices.places.update(place.code, {
         $addToSet: {
           reservationsRequests: createdReservationRequest['_id'],
         },
       });
-      /*******NOTIFICATIONS ***************/
       this.__pushNotifications({
         client: {
           firstName: value.firstName,
@@ -403,9 +400,9 @@ export class ReservationsService {
         companyId: place.company,
         houseId: place.house,
         authorAction: value.by,
-        notificationType: 'Demande de réservation'
-      })
-      /*******NOTIFICATIONS ***************/
+        notificationType: 'Demande de réservation',
+        message: `Nouvelle demande de réservation au nom de: ${value.firstName} ${value.lastName}`,
+      });
       return succeed({
         code: HttpStatus.OK,
         data: {
@@ -421,7 +418,9 @@ export class ReservationsService {
     }
   }
 
-  async acceptReservationRequest(value: AcceptReservationRequestDto): Promise<Result> {
+  async acceptReservationRequest(
+    value: AcceptReservationRequestDto,
+  ): Promise<Result> {
     try {
       const user = await this.dataServices.users.findOne(
         value.by,
@@ -466,37 +465,60 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      const place = await this.dataServices.places.findById(reservation.place, '_id code house company');
-
-      await Promise.all([
-        this.dataServices.places.update(place.code, {
-          currentStatus: EPlaceStatus.TAKEN,
-          $addToSet: {
-            reservations: reservation['_id'],
+      const place = await this.dataServices.places.findById(
+        reservation.place,
+        '_id code house company',
+      );
+      const operationDate = new Date();
+      if (value.start) {
+        await Promise.all([
+          this.dataServices.places.update(place.code, {
+            currentStatus: EPlaceStatus.TAKEN,
+            $addToSet: {
+              reservations: reservation['_id'],
+            },
+          }),
+          this.dataServices.reservations.update(reservation.code, {
+            status: EReservationStatus.IN_PROGRESS,
+            realStartDate: operationDate,
+            lastUpdatedAt: operationDate,
+            lastUpdatedBy: user['_id'],
+          }),
+        ]);
+        this.__pushNotifications({
+          client: {
+            firstName: reservation.user.firstName,
+            lastName: reservation.user.lastName,
+            phone: reservation.user.phone,
           },
-        }),
-        this.dataServices.reservations.update(reservation.code, {
-          status: EReservationStatus.IN_PROGRESS,
+          companyId: place.company,
+          houseId: place.house,
+          authorAction: value.by,
+          notificationType: 'Demande de réservation acceptée.',
+          message: `Réservation démarrée au nom de: ${reservation.user.firstName} ${reservation.user.lastName}`,
+        });
+      } else {
+        await this.dataServices.reservations.update(reservation.code, {
+          status: EReservationStatus.ACCEPTED,
           lastUpdatedAt: new Date(),
           lastUpdatedBy: user['_id'],
-        })
-      ])
-      /*******NOTIFICATIONS ***************/
-      this.__pushNotifications({
-        client: {
-          firstName: reservation.user.firstName,
-          lastName: reservation.user.lastName,
-          phone: reservation.user.phone,
-        },
-        companyId: place.company,
-        houseId: place.house,
-        authorAction: value.by,
-        notificationType: 'Demande de réservation acceptée'
-      })
-      /*******NOTIFICATIONS ***************/
+        });
+        this.__pushNotifications({
+          client: {
+            firstName: reservation.user.firstName,
+            lastName: reservation.user.lastName,
+            phone: reservation.user.phone,
+          },
+          companyId: place.company,
+          houseId: place.house,
+          authorAction: value.by,
+          notificationType: 'Demande de réservation acceptée.',
+          message: `Réservation acceptée au nom de: ${reservation.user.firstName} ${reservation.user.lastName}`,
+        });
+      }
       return succeed({
         data: {},
-        message: 'Reservation started.'
+        message: 'Reservation started.',
       });
     } catch (error) {
       console.log({ error });
@@ -507,7 +529,9 @@ export class ReservationsService {
     }
   }
 
-  async declineReservationRequest(value: DeclineReservationRequestDto): Promise<Result> {
+  async declineReservationRequest(
+    value: DeclineReservationRequestDto,
+  ): Promise<Result> {
     try {
       const user = await this.dataServices.users.findOne(
         value.by,
@@ -552,16 +576,18 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      const place = await this.dataServices.places.findById(reservation.place, '_id code house company');
-
+      const place = await this.dataServices.places.findById(
+        reservation.place,
+        '_id code house company',
+      );
       await Promise.all([
         this.dataServices.reservations.update(reservation.code, {
           status: EReservationStatus.CANCELLED,
           lastUpdatedAt: new Date(),
           lastUpdatedBy: user['_id'],
-        })
-      ])
-      /*******NOTIFICATIONS ***************/
+        }),
+      ]);
+      /******* NOTIFICATIONS ***************/
       this.__pushNotifications({
         client: {
           firstName: reservation.user.firstName,
@@ -571,12 +597,13 @@ export class ReservationsService {
         companyId: place.company,
         houseId: place.house,
         authorAction: value.by,
-        notificationType: 'Réservation annulée'
-      })
-      /*******NOTIFICATIONS ***************/
+        notificationType: 'Réservation annulée',
+        message: `Réservation annulée pour: ${reservation.user.firstName} ${reservation.user.lastName}`,
+      });
+      /****** NOTIFICATIONS ***************/
       return succeed({
         data: {},
-        message: 'Reservation started.'
+        message: 'Reservation aborted.',
       });
     } catch (error) {
       console.log({ error });
@@ -587,7 +614,14 @@ export class ReservationsService {
     }
   }
 
-  async __pushNotifications({ companyId, houseId, authorAction, client, notificationType }: ISendPushNotifications) {
+  async __pushNotifications({
+    companyId,
+    houseId,
+    authorAction,
+    client,
+    notificationType,
+    message,
+  }: ISendPushNotifications) {
     try {
       const [users, company, house] = await Promise.all([
         this.dataServices.users.findUsersByCompany(
@@ -606,14 +640,16 @@ export class ReservationsService {
       // console.log({ users })
       const messages = [];
       for (const user of users) {
-        if (true) { //user.code !== authorAction
+        if (true) {
+          //user.code !== authorAction
           let mustReceiveNotification = false;
-          if ((user.account_type === EAccountType.ADMIN) || (
-            user.account_type === EAccountType.SUPERVISOR &&
-            user.house?.toString() === houseId.toString()
-          )) {
+          if (
+            user.account_type === EAccountType.ADMIN ||
+            (user.account_type === EAccountType.SUPERVISOR &&
+              user.house?.toString() === houseId.toString())
+          ) {
             mustReceiveNotification = true;
-          } 
+          }
           // else {
           //   console.log(`user house ${ user.house?.toString()} --- house: ${houseId.toString()}`)
           // }
@@ -626,7 +662,7 @@ export class ReservationsService {
                 sound: 'default',
                 title: `${company.name} • ${house.name}`,
                 subtitle: notificationType,
-                body: `${notificationType} au nom de: ${client.firstName} ${client.lastName}`,
+                body: `${message}`,
                 data: { withSome: `${client.phone}` },
               });
             }
@@ -635,7 +671,7 @@ export class ReservationsService {
       }
       // __sendPushNotifications(messages);
     } catch (error) {
-      console.log({ error })
+      console.log({ error });
     }
   }
 }

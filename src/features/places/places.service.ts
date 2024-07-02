@@ -288,6 +288,7 @@ export class PlacesService {
           error: 'Bad request',
         });
       }
+      const operationDate = new Date();
       const update = {
         description: value.description || place.description,
         label: value.label || place.label,
@@ -312,7 +313,7 @@ export class PlacesService {
         position: value.position || place.position,
         type: value.type || place.type,
         star: value.star || place.star,
-        lastUpdatedAt: new Date(),
+        lastUpdatedAt: operationDate,
         lastUpdatedBy: user['_id'],
       };
       await this.dataServices.places.update(place.code, update);
@@ -322,7 +323,8 @@ export class PlacesService {
           status: EReservationStatus.IN_PROGRESS,
         }, {
           status: EReservationStatus.ENDED,
-          lastUpdatedAt: new Date(),
+          realEndDate: operationDate,
+          lastUpdatedAt: operationDate,
           lastUpdatedBy: user['_id']
         })
       }

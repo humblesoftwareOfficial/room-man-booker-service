@@ -115,4 +115,5 @@ export interface ISendPushNotifications {
     phone: string;
   },
   notificationType: string;
+  message: string;
 }

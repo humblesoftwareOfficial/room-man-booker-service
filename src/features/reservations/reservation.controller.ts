@@ -32,21 +32,21 @@ export class ReservationsController {
     return this.service.create(value);
   }
 
-  @ApiCreatedResponse({
-    description: 'Reservation successfully updated.',
-    type: Reservation,
-  })
-  @ApiInternalServerErrorResponse({
-    description: 'Internal server error occured.',
-  })
-  @ApiBadRequestResponse({
-    description: 'Bad Request.',
-  })
-  @UseGuards(JwtAuthGuard)
-  @Post('/update')
-  async update(@Body() value: UpdateReservationDto) {
-    return this.service.update(value);
-  }
+  // @ApiCreatedResponse({
+  //   description: 'Reservation successfully updated.',
+  //   type: Reservation,
+  // })
+  // @ApiInternalServerErrorResponse({
+  //   description: 'Internal server error occured.',
+  // })
+  // @ApiBadRequestResponse({
+  //   description: 'Bad Request.',
+  // })
+  // @UseGuards(JwtAuthGuard)
+  // @Post('/update')
+  // async update(@Body() value: UpdateReservationDto) {
+  //   return this.service.update(value);
+  // }
 
   @ApiCreatedResponse({
     description: 'List of reservations.',

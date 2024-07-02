@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -177,6 +178,11 @@ export class AcceptReservationRequestDto {
   @IsNotEmpty({ message: 'Reservation is required.' })
   @Validate(ReservationCodeValidator)
   reservation: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  start: boolean;
 }
 
 export class DeclineReservationRequestDto {
