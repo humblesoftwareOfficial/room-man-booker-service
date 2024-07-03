@@ -18,7 +18,7 @@ import {
   ISendPushNotifications,
   getReservationUpdateStatusMessage,
 } from './reservations.helper';
-import { stringToDate, stringToFullDate } from '../helpers/date.helper';
+import { stringToFullDate } from '../helpers/date.helper';
 import { __sendPushNotifications } from 'src/config/notifications';
 import { EAccountType } from '../users/users.helper';
 import { EDevise, EPlaceStatus } from '../places/places.helper';
@@ -65,8 +65,8 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      const startDate = stringToDate(value.startDate);
-      const endDate = value.endDate ? stringToDate(value.endDate) : startDate;
+      const startDate = stringToFullDate(value.startDate);
+      const endDate = value.endDate ? stringToFullDate(value.endDate) : startDate;
       const operationDate = new Date();
       const newReservation: Reservation = {
         code: codeGenerator('RES'),
@@ -359,8 +359,8 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      const startDate = stringToDate(value.startDate);
-      const endDate = value.endDate ? stringToDate(value.endDate) : startDate;
+      const startDate = stringToFullDate(value.startDate);
+      const endDate = value.endDate ? stringToFullDate(value.endDate) : startDate;
       const operationDate = new Date();
       const newReservation: Reservation = {
         code: codeGenerator('RES'),

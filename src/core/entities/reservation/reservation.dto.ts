@@ -59,12 +59,12 @@ export class NewReservationDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Validate(IsValidDate)
+  @Validate(IsValidFullDate)
   startDate: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Validate(IsValidDate)
+  @Validate(IsValidFullDate)
   endDate: string;
 
   @ApiProperty({ required: false })
@@ -109,12 +109,12 @@ export class UpdateReservationDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Validate(IsValidDate)
+  @Validate(IsValidFullDate)
   startDate: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Validate(IsValidDate)
+  @Validate(IsValidFullDate)
   endDate: string;
 
   @ApiProperty({ required: false })
