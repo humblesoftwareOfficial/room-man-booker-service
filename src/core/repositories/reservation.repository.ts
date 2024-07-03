@@ -44,12 +44,14 @@ export class ReservationRepository<T>
         {
           $match: {
             place: { $in: places },
-            status: { $in: [EReservationStatus.IN_PROGRESS,EReservationStatus.ENDED]},
+            status: { $in: [EReservationStatus.IN_PROGRESS, EReservationStatus.ENDED]},
             isDeleted: false,
             ...(startDate &&
               endDate && {
                 startDate: { $gte: startDate, $lte: endDate },
               }),
+
+              ///revoir le calcul ici.. pour les reservations à longue durée
           },
         },
         {

@@ -14,6 +14,10 @@ const PopulateOptions = [
     path: 'house',
     select: '-_id code name address description',
   },
+  {
+    path: 'reservation',
+    select: '-_id -__v -place',
+  },
 ];
 
 export class PlaceRepository<T>
