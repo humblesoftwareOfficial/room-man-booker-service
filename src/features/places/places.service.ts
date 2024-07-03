@@ -315,6 +315,9 @@ export class PlacesService {
         star: value.star || place.star,
         lastUpdatedAt: operationDate,
         lastUpdatedBy: user['_id'],
+        ...(value.currentStatus === EPlaceStatus.AVAILABLE && {
+          reservation: null,
+        })
       };
       await this.dataServices.places.update(place.code, update);
       if (value.currentStatus === EPlaceStatus.AVAILABLE) {

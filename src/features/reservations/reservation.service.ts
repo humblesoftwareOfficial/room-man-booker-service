@@ -65,6 +65,8 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
+      const startDate = stringToDate(value.startDate);
+      const endDate = value.endDate ? stringToDate(value.endDate) : startDate;
       const operationDate = new Date();
       const newReservation: Reservation = {
         code: codeGenerator('RES'),
@@ -78,8 +80,8 @@ export class ReservationsService {
           tokenValue: value.tokenValue,
           identification: value.identification,
         },
-        startDate: value.startDate ? stringToDate(value.startDate) : null,
-        endDate: value.endDate ? stringToDate(value.endDate) : null,
+        startDate,
+        endDate,
         duration: value.duration,
         place: place['_id'],
         company: place.company,
@@ -357,6 +359,8 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
+      const startDate = stringToDate(value.startDate);
+      const endDate = value.endDate ? stringToDate(value.endDate) : startDate;
       const operationDate = new Date();
       const newReservation: Reservation = {
         code: codeGenerator('RES'),
@@ -370,8 +374,8 @@ export class ReservationsService {
           tokenValue: value.tokenValue,
           identification: value.identification,
         },
-        startDate: stringToDate(value.startDate),
-        endDate: value.endDate ? stringToDate(value.endDate) : null,
+        startDate,
+        endDate,
         duration: value.duration,
         place: place['_id'],
         company: place.company,
@@ -451,7 +455,11 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      if (reservation.status !== EReservationStatus.ON_REQUEST) {
+      if (
+        ![EReservationStatus.ON_REQUEST, EReservationStatus.ACCEPTED].includes(
+          reservation.status,
+        )
+      ) {
         return fail({
           code: HttpStatus.BAD_REQUEST,
           message: `You cannot accept a reservation with the status: ${reservation.status}`,
@@ -467,13 +475,23 @@ export class ReservationsService {
       }
       const place = await this.dataServices.places.findById(
         reservation.place,
-        '_id code house company',
+        '_id code house company currentStatus',
       );
       const operationDate = new Date();
       if (value.start) {
+        if (place.currentStatus === EPlaceStatus.TAKEN) {
+          return fail({
+            code: HttpStatus.BAD_REQUEST,
+            error:
+              'This room is occupied. You must end the current reservation before starting a new one.',
+            message:
+              'This room is occupied. You must end the current reservation before starting a new one.',
+          });
+        }
         await Promise.all([
           this.dataServices.places.update(place.code, {
             currentStatus: EPlaceStatus.TAKEN,
+            reservation: reservation['_id'],
             $addToSet: {
               reservations: reservation['_id'],
             },
@@ -562,10 +580,10 @@ export class ReservationsService {
           error: 'Bad request',
         });
       }
-      if (reservation.status !== EReservationStatus.ON_REQUEST) {
+      if (reservation.status === EReservationStatus.IN_PROGRESS) {
         return fail({
           code: HttpStatus.BAD_REQUEST,
-          message: `You cannot accept a reservation with the status: ${reservation.status}`,
+          message: `You cannot cancel a reservation with the status: ${reservation.status}`,
           error: 'Bad request',
         });
       }
@@ -669,7 +687,7 @@ export class ReservationsService {
           }
         }
       }
-       __sendPushNotifications(messages);
+      __sendPushNotifications(messages);
     } catch (error) {
       console.log({ error });
     }
