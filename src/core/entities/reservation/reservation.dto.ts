@@ -194,3 +194,22 @@ export class DeclineReservationRequestDto {
   @Validate(ReservationCodeValidator)
   reservation: string;
 }
+
+export class ExtendReservationDto {
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
+  @IsNotEmpty({ message: 'Reservation is required.' })
+  @Validate(ReservationCodeValidator)
+  reservation: string;
+
+  @Validate(IsValidFullDate)
+  endDate: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  price: number;
+}

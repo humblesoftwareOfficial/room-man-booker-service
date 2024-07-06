@@ -5,6 +5,7 @@ import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import {
   AcceptReservationRequestDto,
   DeclineReservationRequestDto,
+  ExtendReservationDto,
   NewReservationDto,
   ReservationListDto,
   ReservationRequestDto,
@@ -18,7 +19,7 @@ import {
   ISendPushNotifications,
   getReservationUpdateStatusMessage,
 } from './reservations.helper';
-import { stringToFullDate } from '../helpers/date.helper';
+import { formatDateToString, stringToFullDate } from '../helpers/date.helper';
 import { __sendPushNotifications } from 'src/config/notifications';
 import { EAccountType } from '../users/users.helper';
 import { EDevise, EPlaceStatus } from '../places/places.helper';
@@ -66,7 +67,9 @@ export class ReservationsService {
         });
       }
       const startDate = stringToFullDate(value.startDate);
-      const endDate = value.endDate ? stringToFullDate(value.endDate) : startDate;
+      const endDate = value.endDate
+        ? stringToFullDate(value.endDate)
+        : startDate;
       const operationDate = new Date();
       const newReservation: Reservation = {
         code: codeGenerator('RES'),
@@ -360,7 +363,9 @@ export class ReservationsService {
         });
       }
       const startDate = stringToFullDate(value.startDate);
-      const endDate = value.endDate ? stringToFullDate(value.endDate) : startDate;
+      const endDate = value.endDate
+        ? stringToFullDate(value.endDate)
+        : startDate;
       const operationDate = new Date();
       const newReservation: Reservation = {
         code: codeGenerator('RES'),
@@ -512,7 +517,7 @@ export class ReservationsService {
           companyId: place.company,
           houseId: place.house,
           authorAction: value.by,
-          notificationType: 'Demande de réservation acceptée.',
+          notificationType: 'Réservation démarrée.',
           message: `Réservation démarrée au nom de: ${reservation.user.firstName} ${reservation.user.lastName}`,
         });
       } else {
@@ -627,6 +632,127 @@ export class ReservationsService {
       console.log({ error });
       throw new HttpException(
         `Error while accepting reservation request. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async extendReservation(value: ExtendReservationDto): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        value.by,
+        '_id code company isDeleted isActive',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found!',
+          error: 'Not found!',
+        });
+      }
+      if (!user.isActive || user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This account is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const reservation = await this.dataServices.reservations.findOne(
+        value.reservation,
+        '-__v',
+      );
+      if (reservation.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'Reservation not found',
+          error: 'Bad request',
+        });
+      }
+      if (reservation.status !== EReservationStatus.IN_PROGRESS) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: `You cannot extend this reservation. It's already finished.`,
+          error: 'Bad request',
+        });
+      }
+      if (reservation.company.toString() !== user.company.toString()) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: `You cannot do this action`,
+          error: 'Bad request',
+        });
+      }
+      // const operationDate = new Date();
+      // const newReservation: Reservation = {
+      //   code: codeGenerator('RES'),
+      //   createdAt: operationDate,
+      //   lastUpdatedAt: operationDate,
+      //   status: EReservationStatus.ACCEPTED,
+      //   user: {
+      //     firstName: reservation.user.firstName,
+      //     lastName: reservation.user.lastName,
+      //     phone: reservation.user.phone,
+      //     tokenValue: reservation.user.tokenValue,
+      //     identification: reservation.user.identification,
+      //   },
+      //   startDate: operationDate,
+      //   endDate: stringToFullDate(value.endDate),
+      //   duration: reservation.duration,
+      //   place: reservation['_id'],
+      //   company: reservation.company,
+      //   house: reservation.house,
+      //   price: {
+      //     description: '',
+      //     devise: EDevise.FCFA,
+      //     value: value.price,
+      //   },
+      // };
+      // const [createdReservation] = await Promise.all([
+      //   this.dataServices.reservations.create(
+      //     newReservation,
+      //   ),
+      //   this.dataServices.reservations.update(reservation.code, {
+      //     status: EReservationStatus.ENDED,
+      //     realEndDate: operationDate,
+      //     lastUpdatedAt: operationDate,
+      //     lastUpdatedBy: user['_id'],
+      //   }),
+      // ]);
+      const endDate = stringToFullDate(value.endDate);
+      await this.dataServices.reservations.update(reservation.code, {
+        endDate,
+        price: {
+          description: '',
+          devise: EDevise.FCFA,
+          value: value.price,
+        },
+        lastUpdatedAt: new Date(),
+        lastUpdatedBy: user['_id'],
+      });
+      this.__pushNotifications({
+        client: {
+          firstName: reservation.user.firstName,
+          lastName: reservation.user.lastName,
+          phone: reservation.user.phone,
+        },
+        companyId: reservation.company,
+        houseId: reservation.house,
+        authorAction: value.by,
+        notificationType: 'Réservation prolongée.',
+        message: `Prolongation de réservation pour : ${
+          reservation.user.firstName
+        } ${reservation.user.lastName}. Jusqu'au ${formatDateToString(
+          endDate,
+        )} à ${endDate.getHours()}:${endDate.getMinutes()}`,
+      });
+      return succeed({
+        code: HttpStatus.OK,
+        data: {},
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while extending reservation. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
