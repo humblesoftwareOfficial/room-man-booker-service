@@ -57,6 +57,9 @@ export class Reservation extends DefaultAttributes {
 
   @Prop({ type: Types.ObjectId, ref: 'User', default: null })
   lastUpdatedBy?: User | Types.ObjectId;
+
+  @Prop({ type: Boolean, default: false })
+  isExtended?: boolean;
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);
