@@ -726,6 +726,7 @@ export class ReservationsService {
           devise: EDevise.FCFA,
           value: value.price,
         },
+        isExtended: true,
         lastUpdatedAt: new Date(),
         lastUpdatedBy: user['_id'],
       });
