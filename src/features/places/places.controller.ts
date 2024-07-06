@@ -13,6 +13,7 @@ import {
   AddMediasDto,
   NewPlaceDto,
   PlaceListDto,
+  UpdateMediasDto,
   UpdatePlaceDto,
 } from 'src/core/entities/places/places.dto';
 import { Place } from 'src/core/entities/places/places.entity';
@@ -126,4 +127,20 @@ export class PlacesController {
   // async getReservationsByPlace(@Body() value: GetReservationsByPlaceDto) {
   //   return this.service.getReservationsByPlace(value);
   // }
+
+  @ApiCreatedResponse({
+    description: 'New place successfully registered.',
+    type: Place,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post('/update-medias')
+  async updateMedias(@Body() value: UpdateMediasDto) {
+    return this.service.updateMedias(value);
+  }
 }

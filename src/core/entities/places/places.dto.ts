@@ -312,3 +312,21 @@ export class GetStatsByCompany {
   @Validate(CompanyCodeValidator)
   company: string;
 }
+
+export class UpdateMediasDto {
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
+  @IsNotEmpty({ message: 'Place is required.' })
+  @Validate(PlaceCodeValidator)
+  place: string;
+
+  @IsArray({
+    message: 'Medias must be a valid array of PlaceMediaDto.',
+  })
+  @Validate(NotEmptyArrayValidator)
+  @ValidateNested({ each: true })
+  @Type(() => PlaceMediaDto)
+  medias: PlaceMediaDto[];
+}

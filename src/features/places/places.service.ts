@@ -8,6 +8,7 @@ import {
   GetStatsByCompany,
   NewPlaceDto,
   PlaceListDto,
+  UpdateMediasDto,
   UpdatePlaceDto,
 } from 'src/core/entities/places/places.dto';
 import { Place } from 'src/core/entities/places/places.entity';
@@ -216,6 +217,99 @@ export class PlacesService {
     } catch (error) {
       throw new HttpException(
         `Error while adding new medias on place. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateMedias(value: UpdateMediasDto): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        value.by,
+        '_id code company isDeleted',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found',
+          error: 'Not found!',
+        });
+      }
+      if (user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This account is no longer active',
+          error: 'Bad request',
+        });
+      }
+      if (!user.company) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'You cannot do this action',
+          error: 'Bad request',
+        });
+      }
+      const company = await this.dataServices.companies.findById(
+        user.company as Types.ObjectId,
+        '_id code isDeleted',
+      );
+      if (!company) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'Company not found',
+          error: 'Not found!',
+        });
+      }
+      if (company.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This company is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const place = await this.dataServices.places.findOne(
+        value.place,
+        '_id code isDeleted company',
+      );
+      if (!place) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'place not found!',
+          error: 'Not found',
+        });
+      }
+      if (place.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This place is no longer active',
+          error: 'Bad request',
+        });
+      }
+      if (place.company?.toString() !== user.company.toString()) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'You cannot do this action',
+          error: 'Bad request',
+        });
+      }
+      const medias = value.medias.flatMap((m) => ({
+        url: m.url,
+        code: codeGenerator('MED'),
+      }));
+      const operationDate = new Date();
+      const update = {
+        lastUpdatedAt: operationDate,
+        lastUpdatedBy: user['_id'],
+        medias: medias,
+      };
+      await this.dataServices.places.update(place.code, update);
+      return succeed({
+        code: HttpStatus.OK,
+        data: {},
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Error while updating place medias on place. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
