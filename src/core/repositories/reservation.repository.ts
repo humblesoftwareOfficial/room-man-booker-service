@@ -2,6 +2,7 @@ import {
   EReservationStatus,
   IPlaceCAAmount,
   IReservationList,
+  IReservationRecap,
   IReservationsByPlace,
 } from 'src/features/reservations/reservations.helper';
 import { MongoGenericRepository } from '../abstracts/abstract-repository';
@@ -34,6 +35,44 @@ export class ReservationRepository<T>
   extends MongoGenericRepository<T>
   implements IReservationRepository<T>
 {
+  getRecap({
+    places,
+    endDate,
+    startDate,
+    status,
+  }: IReservationRecap): Promise<any[]> {
+    return this._repository
+      .aggregate([
+        {
+          $match: {
+            place: { $in: places },
+            ...(status?.length && {
+              status: { $in: status },
+            }),
+            ...(startDate &&
+              endDate && {
+                startDate: { $gte: startDate, $lte: endDate },
+              }),
+            isDeleted: false,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            count: {
+              $count: {},
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            count: 1
+          }
+        }
+      ])
+      .exec();
+  }
   getPlaceTotalAmount({
     places,
     startDate,
@@ -44,14 +83,16 @@ export class ReservationRepository<T>
         {
           $match: {
             place: { $in: places },
-            status: { $in: [EReservationStatus.IN_PROGRESS, EReservationStatus.ENDED]},
+            status: {
+              $in: [EReservationStatus.IN_PROGRESS, EReservationStatus.ENDED],
+            },
             isDeleted: false,
             ...(startDate &&
               endDate && {
                 startDate: { $gte: startDate, $lte: endDate },
               }),
 
-              ///revoir le calcul ici.. pour les reservations à longue durée
+            ///revoir le calcul ici.. pour les reservations à longue durée
           },
         },
         {

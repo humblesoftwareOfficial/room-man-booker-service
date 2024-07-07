@@ -771,7 +771,7 @@ export class ReservationsService {
       const [users, company, house] = await Promise.all([
         this.dataServices.users.findUsersByCompany(
           companyId as Types.ObjectId,
-          '_id code push_tokens account_type firstName company house',
+          '_id code push_tokens account_type firstName company house isDeleted isActive',
         ),
         this.dataServices.companies.findById(
           companyId as Types.ObjectId,
@@ -785,7 +785,7 @@ export class ReservationsService {
       // console.log({ users })
       const messages = [];
       for (const user of users) {
-        if (true) {
+        if (!user.isDeleted && user.isActive) {
           //user.code !== authorAction
           let mustReceiveNotification = false;
           if (

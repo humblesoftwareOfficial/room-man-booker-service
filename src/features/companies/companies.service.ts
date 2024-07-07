@@ -22,6 +22,7 @@ import {
 import { Types } from 'mongoose';
 import Expo from 'expo-server-sdk';
 import { __sendPushNotifications } from 'src/config/notifications';
+import { EReservationStatus } from '../reservations/reservations.helper';
 
 @Injectable()
 export class CompaniesService {
@@ -104,14 +105,19 @@ export class CompaniesService {
 
   async stats(data: GetStatsByCompany): Promise<Result> {
     try {
-      const company = await this.dataServices.companies.findOne(data.company, '-__v');
+      const company = await this.dataServices.companies.findOne(
+        data.company,
+        '-__v',
+      );
       if (!company) {
         return fail({
           code: HttpStatus.NOT_FOUND,
-          error: "Company not found"
-        })
+          error: 'Company not found',
+        });
       }
-      const places = await this.dataServices.places.getPlacesByCompany(company['_id']);
+      const places = await this.dataServices.places.getPlacesByCompany(
+        company['_id'],
+      );
       if (!places?.length) {
         return succeed({
           data: {
@@ -119,8 +125,8 @@ export class CompaniesService {
             dailyCA: 0,
             weeklyCA: 0,
             monthlyCA: 0,
-          }
-        })
+          },
+        });
       }
       const week = getCurrentWeekInterval();
       const month = getCurrentMonthInterval();
@@ -129,7 +135,15 @@ export class CompaniesService {
       todayStart.setHours(0, 0, 0, 0);
       todayEnd.setHours(23, 59, 59);
 
-      const [placesCADaily, placesCAWeek, placesCAMonth] = await Promise.all([
+      const [
+        placesCADaily,
+        placesCAWeek,
+        placesCAMonth,
+        totalReservations,
+        acceptedReservations,
+        cancelledReservations,
+        currentReservations,
+      ] = await Promise.all([
         this.dataServices.reservations.getPlaceTotalAmount({
           places: places.flatMap((p) => p['_id']),
           startDate: todayStart,
@@ -144,8 +158,27 @@ export class CompaniesService {
           places: places.flatMap((p) => p['_id']),
           startDate: month.start,
           endDate: month.end,
-        })
-      ])
+        }),
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+        }),
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+          status: [
+            EReservationStatus.ACCEPTED,
+            EReservationStatus.ENDED,
+            EReservationStatus.IN_PROGRESS,
+          ],
+        }),
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+          status: [EReservationStatus.CANCELLED],
+        }),
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+          status: [EReservationStatus.IN_PROGRESS],
+        }),
+      ]);
       const statusCount = places.reduce((acc, place) => {
         if (!acc[place.currentStatus]) {
           acc[place.currentStatus] = 0;
@@ -159,11 +192,32 @@ export class CompaniesService {
           // places,
           statusCount,
           totalPlaces: places.length,
-          placesCADaily: placesCADaily.reduce((sum, place) => sum + place.amount, 0),
-          placesCAWeek: placesCAWeek.reduce((sum, place) => sum + place.amount, 0),
-          placesCAMonth: placesCAMonth.reduce((sum, place) => sum + place.amount, 0)
-        }
-       })
+          placesCADaily: placesCADaily.reduce(
+            (sum, place) => sum + place.amount,
+            0,
+          ),
+          placesCAWeek: placesCAWeek.reduce(
+            (sum, place) => sum + place.amount,
+            0,
+          ),
+          placesCAMonth: placesCAMonth.reduce(
+            (sum, place) => sum + place.amount,
+            0,
+          ),
+          totalReservations: totalReservations?.length
+            ? totalReservations[0]
+            : { count: 0 },
+          acceptedReservations: acceptedReservations?.length
+            ? acceptedReservations[0]
+            : { count: 0 },
+          cancelledReservations: cancelledReservations?.length
+            ? cancelledReservations[0]
+            : { count: 0 },
+          currentReservations: currentReservations?.length
+            ? currentReservations[0]
+            : { count: 0 },
+        },
+      });
     } catch (error) {
       console.log({ error });
       throw new HttpException(

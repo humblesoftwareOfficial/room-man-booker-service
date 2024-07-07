@@ -117,3 +117,10 @@ export interface ISendPushNotifications {
   notificationType: string;
   message: string;
 }
+
+export interface IReservationRecap {
+  places: Types.ObjectId[];
+  startDate?: Date;
+  endDate?: Date;
+  status?: EReservationStatus[]
+}
