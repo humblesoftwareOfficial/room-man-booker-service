@@ -216,3 +216,23 @@ export const getCurrentMonthInterval = () => {
     end: lastDayOfMonth
   };
 }
+
+export const isValidIntervalDate = (startDate: Date, endDate: Date) => endDate >= startDate;
+
+export const formatIntervalDate = (startDate: Date, endDate: Date) => {
+  const formattedEndDate = endDate;
+  if (formattedEndDate) {
+    formattedEndDate.setHours(23, 59, 59, 999);
+  }
+  const formatedOneDateFilter = endDate
+    ? null
+    : {
+        startDate: new Date(startDate),
+        endDate: new Date(startDate),
+      };
+  if (formatedOneDateFilter) {
+    formatedOneDateFilter.startDate.setHours(0, 0, 0, 0);
+    formatedOneDateFilter.endDate.setHours(23, 59, 59, 999);
+  }
+  return { formattedEndDate, formatedOneDateFilter };
+};

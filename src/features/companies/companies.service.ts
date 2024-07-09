@@ -14,10 +14,16 @@ import {
   generateDefaultPassword,
 } from 'src/config/code-generator';
 import { User } from 'src/core/entities/users/user.entity';
-import { GetStatsByCompany } from 'src/core/entities/places/places.dto';
 import {
+  GetStatsByCompany,
+  GetStatsCAByCompany,
+} from 'src/core/entities/places/places.dto';
+import {
+  formatIntervalDate,
   getCurrentMonthInterval,
   getCurrentWeekInterval,
+  isValidIntervalDate,
+  stringToDate,
 } from '../helpers/date.helper';
 import { Types } from 'mongoose';
 import Expo from 'expo-server-sdk';
@@ -222,6 +228,132 @@ export class CompaniesService {
       console.log({ error });
       throw new HttpException(
         `Error while getting stats infos. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getStatsRecap(data: GetStatsCAByCompany): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        data.by,
+        '_id code company isDeleted isActive',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found!',
+          error: 'Not found!',
+        });
+      }
+      if (!user.isActive || user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This account is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const company = await this.dataServices.companies.findOne(
+        data.company,
+        '-__v',
+      );
+      if (!company) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          error: 'Company not found',
+        });
+      }
+      if (user.company.toString() !== company['_id'].toString()) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          error: 'Bad request!',
+        });
+      }
+      const places = await this.dataServices.places.getPlacesByCompany(
+        company['_id'],
+      );
+      if (!places?.length) {
+        return succeed({
+          data: {
+            values: [],
+          },
+        });
+      }
+      const startDate = stringToDate(data.startDate);
+      const endDate = stringToDate(data.endDate);
+      if (!isValidIntervalDate(startDate, endDate)) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'Invalid date range filter!',
+          error: 'Bad request!',
+        });
+      }
+      const { formattedEndDate } = formatIntervalDate(startDate, endDate);
+      const [
+        ca,
+        totalReservations,
+        doneReservations,
+        cancelledReservations,
+        currentReservations,
+      ] = await Promise.all([
+        this.dataServices.reservations.getPlaceTotalAmount({
+          places: places.flatMap((p) => p['_id']),
+          startDate: startDate,
+          endDate: formattedEndDate,
+        }),
+
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+          startDate: startDate,
+          endDate: formattedEndDate,
+        }),
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+          status: [
+            // EReservationStatus.ACCEPTED,
+            EReservationStatus.ENDED,
+            // EReservationStatus.IN_PROGRESS,
+          ],
+          startDate: startDate,
+          endDate: formattedEndDate,
+        }),
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+          status: [EReservationStatus.CANCELLED],
+          startDate: startDate,
+          endDate: formattedEndDate,
+        }),
+        this.dataServices.reservations.getRecap({
+          places: places.flatMap((p) => p['_id']),
+          status: [EReservationStatus.IN_PROGRESS],
+          startDate: startDate,
+          endDate: formattedEndDate,
+        }),
+      ]);
+      return succeed({
+        data: {
+          ca: ca.reduce(
+            (sum, place) => sum + place.amount,
+            0,
+          ),
+          totalReservations: totalReservations?.length
+            ? totalReservations[0]
+            : { count: 0 },
+          doneReservations: doneReservations?.length
+            ? doneReservations[0]
+            : { count: 0 },
+          cancelledReservations: cancelledReservations?.length
+            ? cancelledReservations[0]
+            : { count: 0 },
+          currentReservations: currentReservations?.length
+            ? currentReservations[0]
+            : { count: 0 },
+        },
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while getting stats CA. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

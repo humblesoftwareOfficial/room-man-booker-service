@@ -330,3 +330,19 @@ export class UpdateMediasDto {
   @Type(() => PlaceMediaDto)
   medias: PlaceMediaDto[];
 }
+
+export class GetStatsCAByCompany {
+  @IsNotEmpty({ message: 'Company is required.' })
+  @Validate(CompanyCodeValidator)
+  company: string;
+
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
+  @Validate(IsValidDate)
+  startDate: string;
+
+  @Validate(IsValidDate)
+  endDate: string;
+}
