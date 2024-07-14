@@ -22,6 +22,13 @@ export class AuthenticationService {
       })
     }
     const user = result.user;
+    if (authDto['app']?.length && user.company.name !== authDto['app']) {
+      return fail({
+        code: HttpStatus.OK,
+        message: "Not authorized",
+        error: "You are not authorized to connect to this platform."
+      })
+    }
     const payload = {
       userId: user['_id'],
       code: user.code,

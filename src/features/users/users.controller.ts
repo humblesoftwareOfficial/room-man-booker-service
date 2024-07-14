@@ -74,4 +74,20 @@ export class UsersController {
   async removeUser(@Body() value: RemoveUserDto) {
     return this.service.removeUser(value);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({
+    description: 'Push token successfully removed.',
+    type: User,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found!',
+  })
+  @Post('/pushtokens/remove')
+  async removePushToken(@Body() value: UpdatePushTokenDto) {
+    return this.service.removePushToken(value);
+  }
 }

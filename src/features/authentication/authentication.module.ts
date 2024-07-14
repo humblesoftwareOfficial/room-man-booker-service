@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -6,6 +6,7 @@ import { AuthenticationController } from './authentication.controller';
 import { AuthenticationService } from './authentication.service';
 import { JwtStrategy } from './jwt.strategy';
 import { DataServicesModule } from 'src/core/abstracts/abstract.data-services.module';
+import { UserCompanyMiddleware } from 'src/core/middlewares/user-company.middleware';
 
 @Module({
   controllers: [AuthenticationController],
@@ -22,4 +23,8 @@ import { DataServicesModule } from 'src/core/abstracts/abstract.data-services.mo
     DataServicesModule,
   ],
 })
-export class AuthenticationModule {}
+export class AuthenticationModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(UserCompanyMiddleware).forRoutes('');
+  }
+}

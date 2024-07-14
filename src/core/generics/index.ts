@@ -29,6 +29,7 @@ export abstract class IUserRepository<T> {
   ): Promise<any[]>;
   abstract authentication(phone: string, password: string): Promise<T>;
   abstract updatePushTokens(code: string, pushtoken: string): Promise<T>;
+  abstract removePushTokens(code: string, pushtoken: string): Promise<T>;
   abstract list(filter: IUsersList): Promise<any[]>
 }
 

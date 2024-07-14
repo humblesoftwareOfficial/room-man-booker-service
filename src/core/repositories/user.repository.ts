@@ -7,6 +7,7 @@ export class UserRepository<T>
   extends MongoGenericRepository<T>
   implements IUserRepository<T>
 {
+  
   list({ companiesId, skip, limit, roles }: IUsersList): Promise<any[]> {
     return this._repository
       .aggregate([
@@ -103,6 +104,20 @@ export class UserRepository<T>
         { code },
         {
           $addToSet: {
+            push_tokens: token,
+          },
+        },
+        { new: true },
+      )
+      .exec();
+  }
+
+  removePushTokens(code: string, token: string): Promise<T> {
+    return this._repository
+      .findOneAndUpdate(
+        { code },
+        {
+          $pull: {
             push_tokens: token,
           },
         },

@@ -95,7 +95,6 @@ export class UsersService {
 
   async updatePushToken(value: UpdatePushTokenDto): Promise<Result> {
     try {
-      console.log('herre')
       const user = await this.dataServices.users.updatePushTokens(
         value.user,
         value.tokenValue,
@@ -104,7 +103,34 @@ export class UsersService {
         return fail({
           code: HttpStatus.NOT_FOUND,
           message: 'User not found!',
-          error: 'Not found ressource',
+          error: 'Not found resource',
+        });
+      }
+      return succeed({
+        code: HttpStatus.OK,
+        data: {
+          token: value.tokenValue,
+        },
+      });
+    } catch (error) {
+      throw new HttpException(
+        `Error while updating user push tokens. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async removePushToken(value: UpdatePushTokenDto): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.removePushTokens(
+        value.user,
+        value.tokenValue,
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'User not found!',
+          error: 'Not found resource',
         });
       }
       return succeed({
