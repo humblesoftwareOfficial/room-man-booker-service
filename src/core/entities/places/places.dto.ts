@@ -20,7 +20,7 @@ import { ArrayCompanyCodesValidator, CompanyCodeValidator } from 'src/features/c
 import { NotEmptyArrayValidator } from 'src/features/helpers/array.helper';
 import { IsValidDate } from 'src/features/helpers/date.helper';
 import { URLValidator } from 'src/features/helpers/url.helper';
-import { ArrayPlacePropertiesValidator, ArrayPlaceTypesValidator, EDevise, EPlaceProperty, EPlaceStatus, EPlaceType, PlaceCodeValidator } from 'src/features/places/places.helper';
+import { ArrayPlacePropertiesValidator, ArrayPlaceStatusValidator, ArrayPlaceTypesValidator, EDevise, EPlaceProperty, EPlaceStatus, EPlaceType, PlaceCodeValidator } from 'src/features/places/places.helper';
 import { UserCodeValidator } from 'src/features/users/users.helper';
 import { PaginationDto } from '../shared/pagination.dto';
 import { ArrayHousesCodesValidator, HouseCodeValidator } from 'src/features/houses/houses.helper';
@@ -285,6 +285,12 @@ export class PlaceListDto extends PaginationDto {
   @IsOptional()
   @IsBoolean()
   isAvailable: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @Validate(ArrayPlaceStatusValidator)
+  status: EPlaceStatus[];
 }
 
 export class GetReservationsByPlaceDto {

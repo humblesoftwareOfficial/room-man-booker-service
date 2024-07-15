@@ -142,6 +142,7 @@ export class ReservationRepository<T>
     status,
     companiesId,
     placesId,
+    housesId
   }: IReservationList): Promise<any[]> {
     return this._repository
       .aggregate([
@@ -152,6 +153,9 @@ export class ReservationRepository<T>
             }),
             ...(companiesId?.length && {
               company: { $in: companiesId },
+            }),
+            ...(housesId?.length && {
+              house: { $in: housesId },
             }),
             ...(placesId?.length && {
               place: { $in: placesId },

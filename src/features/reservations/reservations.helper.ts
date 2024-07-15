@@ -61,6 +61,7 @@ export interface IReservationList {
   limit: number;
   companiesId?: Types.ObjectId[];
   placesId?: Types.ObjectId[];
+  housesId?: Types.ObjectId[];
 }
 
 export enum EReservationDuration {

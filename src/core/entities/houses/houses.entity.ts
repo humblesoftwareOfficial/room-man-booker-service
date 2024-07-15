@@ -11,7 +11,7 @@ export type HouseDocument = House & Document;
 
 @Schema()
 export class House extends DefaultAttributes {
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ type: String, required: true })
   name: string;
 
   @Prop({ type: String, default: '' })
@@ -40,3 +40,9 @@ export class House extends DefaultAttributes {
 }
 
 export const HouseSchema = SchemaFactory.createForClass(House);
+
+HouseSchema.index(
+  { name: 1, company: 1 },
+  { unique: true, partialFilterExpression: { name: { $exists: true } }, name: "House unique" },
+);
+

@@ -12,6 +12,8 @@ export const isValidPropertyEnum = (value: any) => value in EPlaceProperty;
 
 export const isValidPlaceTypeEnum = (value: any) => value in EPlaceType;
 
+export const isValidPlaceStatusEnum = (value: any) => value in EPlaceStatus;
+
 @ValidatorConstraint({ name: 'PlaceCodeValidator', async: false })
 export class PlaceCodeValidator implements ValidatorConstraintInterface {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -43,9 +45,9 @@ export class ArrayPlacePropertiesValidator
   implements ValidatorConstraintInterface
 {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  validate(roles: string[], _args: ValidationArguments) {
+  validate(properties: string[], _args: ValidationArguments) {
     let isValidArray = true;
-    for (const name of roles) {
+    for (const name of properties) {
       if (!isValidPropertyEnum(name)) {
         isValidArray = false;
         break;
@@ -63,9 +65,9 @@ export class ArrayPlacePropertiesValidator
 @ValidatorConstraint({ name: 'ArrayPlaceTypesValidator', async: false })
 export class ArrayPlaceTypesValidator implements ValidatorConstraintInterface {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  validate(roles: string[], _args: ValidationArguments) {
+  validate(types: string[], _args: ValidationArguments) {
     let isValidArray = true;
-    for (const name of roles) {
+    for (const name of types) {
       if (!isValidPlaceTypeEnum(name)) {
         isValidArray = false;
         break;
@@ -77,6 +79,26 @@ export class ArrayPlaceTypesValidator implements ValidatorConstraintInterface {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   defaultMessage(_args: ValidationArguments) {
     return 'Types array must contain only valid place type.';
+  }
+}
+
+@ValidatorConstraint({ name: 'ArrayPlaceStatusValidator', async: false })
+export class ArrayPlaceStatusValidator implements ValidatorConstraintInterface {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  validate(status: string[], _args: ValidationArguments) {
+    let isValidArray = true;
+    for (const name of status) {
+      if (!isValidPlaceStatusEnum(name)) {
+        isValidArray = false;
+        break;
+      }
+    }
+    return isValidArray;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  defaultMessage(_args: ValidationArguments) {
+    return 'Status array must contain only valid place type.';
   }
 }
 
@@ -120,4 +142,5 @@ export interface IPlaceList {
   companies?: Types.ObjectId[];
   houses?: Types.ObjectId[];
   isOnTop?: boolean;
+  status?: EPlaceStatus[];
 }

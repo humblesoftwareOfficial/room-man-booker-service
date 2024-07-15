@@ -248,7 +248,7 @@ export class ReservationsService {
     try {
       const user = await this.dataServices.users.findOne(
         filter.by,
-        '_id company account_type',
+        '_id company account_type house',
       );
       if (!user) {
         return fail({
@@ -280,7 +280,31 @@ export class ReservationsService {
         if (!places.length) {
           return fail({
             code: HttpStatus.NOT_FOUND,
-            message: 'laces not found',
+            message: 'Places not found',
+            error: 'Not found',
+          });
+        }
+      }
+      let house = null;
+      if (filter.house) {
+        house = await this.dataServices.houses.findOne(
+          filter.house,
+          '_id company',
+        );
+        if (!house) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'House not found',
+            error: 'Not found',
+          });
+        }
+        if (
+          house.company.toString() !== user.company.toString() &&
+          user.account_type !== EAccountType.SUPER_ADMIN
+        ) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'House not found',
             error: 'Not found',
           });
         }
@@ -293,6 +317,7 @@ export class ReservationsService {
         status: filter.status,
         companiesId: user.company ? [user.company as Types.ObjectId] : [],
         placesId: places?.length ? places.flatMap((o) => o['_id']) : [],
+        housesId: house ? [house['_id']] : [],
       });
       if (!result.length) {
         return succeed({

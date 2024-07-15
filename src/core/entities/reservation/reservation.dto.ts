@@ -19,6 +19,7 @@ import { ArrayReservationStatusValidator, EReservationDuration, EReservationStat
 import { PlacePricePriceDto } from '../places/places.dto';
 import { UserCodeValidator } from 'src/features/users/users.helper';
 import { PaginationDto } from '../shared/pagination.dto';
+import { ArrayHousesCodesValidator, HouseCodeValidator } from 'src/features/houses/houses.helper';
 
 
 export class NewReservationDto {
@@ -165,7 +166,13 @@ export class ReservationListDto extends PaginationDto {
   @IsOptional()
   @IsArray()
   @Validate(ArrayPlaceCodesValidator)
-  places: string[]
+  places: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNotEmpty()
+  @Validate(HouseCodeValidator)
+  house: string;
 }
 
 export class ReservationRequestDto extends NewReservationDto {}

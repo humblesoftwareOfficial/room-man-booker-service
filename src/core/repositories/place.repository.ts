@@ -53,6 +53,7 @@ export class PlaceRepository<T>
     isOnTop,
     companies,
     houses,
+    status
   }: IPlaceList): Promise<any[]> {
     return this._repository
       .aggregate([
@@ -111,6 +112,11 @@ export class PlaceRepository<T>
             }),
             ...(hasValue(isOnTop) && {
               isOnTop: isOnTop,
+            }),
+            ...(status?.length && {
+              currentStatus: {
+                $in: status,
+              },
             }),
           },
         },

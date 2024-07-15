@@ -469,6 +469,7 @@ export class PlacesService {
         houses: housesId,
         isOnTop: filter.isOnTop,
         isAvailable: filter.isAvailable,
+        status: filter.status,
       });
       if (!result.length) {
         return succeed({
