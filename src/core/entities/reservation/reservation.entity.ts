@@ -10,6 +10,7 @@ import { Place } from '../places/places.entity';
 import { Company } from '../companies/companies.entity';
 import { User } from '../users/user.entity';
 import { House } from '../houses/houses.entity';
+import { Medias } from '../places/place-media.entity';
 
 export type ReservationDocument = Reservation & Document;
 
@@ -60,6 +61,9 @@ export class Reservation extends DefaultAttributes {
 
   @Prop({ type: Boolean, default: false })
   isExtended?: boolean;
+
+  @Prop({ type: [], default: [] })
+  medias?: Medias[];
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);

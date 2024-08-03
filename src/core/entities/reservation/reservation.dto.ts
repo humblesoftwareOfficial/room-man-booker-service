@@ -20,7 +20,15 @@ import { PlacePricePriceDto } from '../places/places.dto';
 import { UserCodeValidator } from 'src/features/users/users.helper';
 import { PaginationDto } from '../shared/pagination.dto';
 import { ArrayHousesCodesValidator, HouseCodeValidator } from 'src/features/houses/houses.helper';
+import { NotEmptyArrayValidator } from 'src/features/helpers/array.helper';
+import { URLValidator } from 'src/features/helpers/url.helper';
 
+
+export class ReservationMediaDto {
+  @IsNotEmpty({ message: 'URL of media is required.' })
+  @Validate(URLValidator)
+  url: string;
+}
 
 export class NewReservationDto {
   @IsNotEmpty({ message: 'User is required.' })
@@ -74,6 +82,16 @@ export class NewReservationDto {
     message: 'reservation duration must be a valid EReservationDuration value',
   })
   duration: EReservationDuration;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray({
+    message: 'Medias must be a valid array of ReservationMediaDto.',
+  })
+  @Validate(NotEmptyArrayValidator)
+  @ValidateNested({ each: true })
+  @Type(() => ReservationMediaDto)
+  medias: ReservationMediaDto[];
 }
 
 export class UpdateReservationDto {
@@ -190,6 +208,27 @@ export class AcceptReservationRequestDto {
   @IsOptional()
   @IsBoolean()
   start: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray({
+    message: 'Medias must be a valid array of ReservationMediaDto.',
+  })
+  @Validate(NotEmptyArrayValidator)
+  @ValidateNested({ each: true })
+  @Type(() => ReservationMediaDto)
+  medias: ReservationMediaDto[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  identification: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  price: number;
 }
 
 export class DeclineReservationRequestDto {

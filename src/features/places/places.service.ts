@@ -2,10 +2,11 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { codeGenerator } from 'src/config/code-generator';
 import { Result, succeed, fail } from 'src/config/http-response';
+import Expo from 'expo-server-sdk';
 import {
   AddMediasDto,
   GetReservationsByPlaceDto,
-  GetStatsByCompany,
+  GetStatsByCompanyDto,
   NewPlaceDto,
   PlaceListDto,
   UpdateMediasDto,
@@ -15,7 +16,12 @@ import { Place } from 'src/core/entities/places/places.entity';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import { stringToDate } from '../helpers/date.helper';
 import { EPlaceStatus } from './places.helper';
-import { EReservationStatus } from '../reservations/reservations.helper';
+import {
+  EReservationStatus,
+  ISendPushNotifications,
+} from '../reservations/reservations.helper';
+import { EAccountType } from '../users/users.helper';
+import { __sendPushNotifications } from 'src/config/notifications';
 
 @Injectable()
 export class PlacesService {
@@ -110,10 +116,13 @@ export class PlacesService {
           url: o.url,
           code: codeGenerator('MED'),
         })),
-        house: house['_id']
+        house: house['_id'],
       };
       const createdPlace = await this.dataServices.places.create(newPlace);
-      await this.dataServices.houses.linkPlacesToHouse([createdPlace['_id']], house['_id']);
+      await this.dataServices.houses.linkPlacesToHouse(
+        [createdPlace['_id']],
+        house['_id'],
+      );
       return succeed({
         code: HttpStatus.OK,
         data: {},
@@ -390,10 +399,10 @@ export class PlacesService {
           value.isAvailable !== undefined && {
             isAvailable: value.isAvailable,
           }),
-          ...(value.currentStatus !== null &&
-            value.currentStatus !== undefined && {
-              currentStatus: value.currentStatus,
-            }),
+        ...(value.currentStatus !== null &&
+          value.currentStatus !== undefined && {
+            currentStatus: value.currentStatus,
+          }),
         ...(value.isOnTop !== null &&
           value.isOnTop !== undefined && {
             isOnTop: value.isOnTop,
@@ -411,19 +420,28 @@ export class PlacesService {
         lastUpdatedBy: user['_id'],
         ...(value.currentStatus === EPlaceStatus.AVAILABLE && {
           reservation: null,
-        })
+        }),
       };
       await this.dataServices.places.update(place.code, update);
       if (value.currentStatus === EPlaceStatus.AVAILABLE) {
-        await this.dataServices.reservations.updateWithFilterObject({
-          place: place['_id'],
-          status: EReservationStatus.IN_PROGRESS,
-        }, {
-          status: EReservationStatus.ENDED,
-          realEndDate: operationDate,
-          lastUpdatedAt: operationDate,
-          lastUpdatedBy: user['_id']
-        })
+        await this.dataServices.reservations.updateWithFilterObject(
+          {
+            place: place['_id'],
+            status: EReservationStatus.IN_PROGRESS,
+          },
+          {
+            status: EReservationStatus.ENDED,
+            realEndDate: operationDate,
+            lastUpdatedAt: operationDate,
+            lastUpdatedBy: user['_id'],
+          },
+        );
+        this.__alertEndOfReservation(
+          place.reservation,
+          place.company,
+          place.house,
+          value.by,
+        );
       }
       return succeed({
         code: HttpStatus.OK,
@@ -505,33 +523,125 @@ export class PlacesService {
         return fail({
           code: HttpStatus.NOT_FOUND,
           error: 'Place not found',
-          message: "Place not found",
-        })
+          message: 'Place not found',
+        });
       }
       const [_, reservationsCA] = await Promise.all([
-        this.dataServices.places.populatePlaceInfos(place), 
+        this.dataServices.places.populatePlaceInfos(place),
         this.dataServices.reservations.getPlaceTotalAmount({
           places: [place['_id']],
-        })
+        }),
       ]);
       const data = {
         ...place,
         _id: undefined,
-      }
+      };
       return succeed({
         data: {
           ...data,
           reservations: place.reservations?.length || 0,
-          reservationsCA: reservationsCA?.length ? reservationsCA[0] : { amount: 0 },
+          reservationsCA: reservationsCA?.length
+            ? reservationsCA[0]
+            : { amount: 0 },
         },
-        message: ""
-      })
+        message: '',
+      });
     } catch (error) {
       console.log({ error });
       throw new HttpException(
         `Error while getting place infos. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async __alertEndOfReservation(
+    reservationId: Types.ObjectId,
+    companyId: Types.ObjectId,
+    houseId: Types.ObjectId,
+    by: any,
+  ) {
+    try {
+      // console.log({ reservationId, companyId, houseId, by})
+      const reservation = await this.dataServices.reservations.findById(
+        reservationId,
+        '-__v',
+      );
+      this.__pushNotifications({
+        client: {
+          firstName: reservation.user.firstName,
+          lastName: reservation.user.lastName,
+          phone: reservation.user.phone,
+        },
+        companyId,
+        houseId,
+        authorAction: by,
+        notificationType: 'Réservation terminée.',
+        message: `Réservation terminée pour: ${reservation.user.firstName} ${reservation.user.lastName}`,
+      });
+    } catch (error) {
+      console.log({ error });
+    }
+  }
+
+  async __pushNotifications({
+    companyId,
+    houseId,
+    authorAction,
+    client,
+    notificationType,
+    message,
+  }: ISendPushNotifications) {
+    try {
+      const [users, company, house] = await Promise.all([
+        this.dataServices.users.findUsersByCompany(
+          companyId as Types.ObjectId,
+          '_id code push_tokens account_type firstName company house isDeleted isActive',
+        ),
+        this.dataServices.companies.findById(
+          companyId as Types.ObjectId,
+          '_id code name',
+        ),
+        this.dataServices.houses.findById(
+          houseId as Types.ObjectId,
+          '_id code name',
+        ),
+      ]);
+      // console.log({ users })
+      const messages = [];
+      for (const user of users) {
+        if (!user.isDeleted && user.isActive) {
+          //user.code !== authorAction
+          let mustReceiveNotification = false;
+          if (
+            user.account_type === EAccountType.ADMIN ||
+            (user.account_type === EAccountType.SUPERVISOR &&
+              user.house?.toString() === houseId.toString())
+          ) {
+            mustReceiveNotification = true;
+          }
+          // else {
+          //   console.log(`user house ${ user.house?.toString()} --- house: ${houseId.toString()}`)
+          // }
+
+          if (mustReceiveNotification) {
+            for (const pushToken of user.push_tokens) {
+              if (!Expo.isExpoPushToken(pushToken)) continue;
+              messages.push({
+                to: pushToken,
+                sound: 'default',
+                title: `${company.name} • ${house.name}`,
+                subtitle: notificationType,
+                body: `${message}`,
+                data: { withSome: `${client.phone}` },
+              });
+            }
+          }
+        }
+      }
+      __sendPushNotifications(messages);
+    } catch (error) {
+      console.log({ error });
     }
   }
 

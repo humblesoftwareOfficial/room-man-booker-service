@@ -313,10 +313,16 @@ export class GetReservationsByPlaceDto {
   endDate: string;
 }
 
-export class GetStatsByCompany {
+export class GetStatsByCompanyDto {
   @IsNotEmpty({ message: 'Company is required.' })
   @Validate(CompanyCodeValidator)
   company: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNotEmpty({ message: 'Company is required.' })
+  @Validate(HouseCodeValidator)
+  house: string;
 }
 
 export class UpdateMediasDto {

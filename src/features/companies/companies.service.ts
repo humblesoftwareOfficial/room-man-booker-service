@@ -15,7 +15,7 @@ import {
 } from 'src/config/code-generator';
 import { User } from 'src/core/entities/users/user.entity';
 import {
-  GetStatsByCompany,
+  GetStatsByCompanyDto,
   GetStatsCAByCompany,
 } from 'src/core/entities/places/places.dto';
 import {
@@ -109,7 +109,7 @@ export class CompaniesService {
     }
   }
 
-  async stats(data: GetStatsByCompany): Promise<Result> {
+  async stats(data: GetStatsByCompanyDto): Promise<Result> {
     try {
       const company = await this.dataServices.companies.findOne(
         data.company,
@@ -121,9 +121,24 @@ export class CompaniesService {
           error: 'Company not found',
         });
       }
-      const places = await this.dataServices.places.getPlacesByCompany(
-        company['_id'],
-      );
+      let house = null;
+      let places = [];
+      if (data.house) {
+        house = await this.dataServices.houses.findOne(data.house, '_id code places name');
+        if (!house) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            error: 'House not found',
+          });
+        }
+        places = house.places.flatMap((p) => ({
+          _id: p
+        }));
+      } else {
+        places = await this.dataServices.places.getPlacesByCompany(
+          company['_id'],
+        );
+      }
       if (!places?.length) {
         return succeed({
           data: {

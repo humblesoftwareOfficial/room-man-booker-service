@@ -4,7 +4,7 @@ import { JwtAuthGuard } from "../authentication/jwt.auth.guard";
 import { CompaniesService } from "./companies.service";
 import { Company } from "src/core/entities/companies/companies.entity";
 import { NewCompanyDto } from "src/core/entities/companies/companies.dto";
-import { GetStatsByCompany, GetStatsCAByCompany } from "src/core/entities/places/places.dto";
+import { GetStatsByCompanyDto, GetStatsCAByCompany } from "src/core/entities/places/places.dto";
 
 @ApiTags('Companies')
 @UseGuards(JwtAuthGuard)
@@ -34,7 +34,7 @@ export class CompaniesController {
     description: 'Internal server error occurred.',
   })
   @Post('/stats')
-  async stats(@Body() data: GetStatsByCompany) {
+  async stats(@Body() data: GetStatsByCompanyDto) {
     return this.service.stats(data);
   }
 

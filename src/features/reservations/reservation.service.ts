@@ -96,6 +96,12 @@ export class ReservationsService {
             value: value.price,
           },
         }),
+        ...(value.medias?.length && {
+          medias: value.medias?.flatMap((o) => ({
+            url: o.url,
+            code: codeGenerator('MED'),
+          })),
+        })
       };
       const createdReservation = await this.dataServices.reservations.create(
         newReservation,
@@ -531,6 +537,20 @@ export class ReservationsService {
             realStartDate: operationDate,
             lastUpdatedAt: operationDate,
             lastUpdatedBy: user['_id'],
+            user: {
+              ...reservation.user,
+              identification: value.identification || reservation.user.identification,
+            },
+            price: {
+              ...reservation.price,
+              value: value.price || reservation.price.value,
+            },
+            ...(value.medias?.length && {
+              medias: value.medias?.flatMap((o) => ({
+                url: o.url,
+                code: codeGenerator('MED'),
+              })),
+            })
           }),
         ]);
         this.__pushNotifications({
