@@ -157,7 +157,7 @@ export class PlaceRepository<T>
               },
               {
                 $sort: {
-                  lastUpdatedAt: -1,
+                  createdAt: -1,
                 },
               },
               {

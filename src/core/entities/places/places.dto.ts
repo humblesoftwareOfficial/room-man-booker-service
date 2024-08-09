@@ -357,4 +357,10 @@ export class GetStatsCAByCompany {
 
   @Validate(IsValidDate)
   endDate: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @Validate(ArrayHousesCodesValidator)
+  houses: string[];
 }
