@@ -73,6 +73,7 @@ export class ReservationRepository<T>
       ])
       .exec();
   }
+  
   getPlaceTotalAmount({
     places,
     startDate,

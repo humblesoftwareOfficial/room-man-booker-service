@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { IPlaceList } from 'src/features/places/places.helper';
+import { IPlaceList, IPlaceListByCompany } from 'src/features/places/places.helper';
 import { MongoGenericRepository } from '../abstracts/abstract-repository';
 import { Medias } from '../entities/places/place-media.entity';
 import { IPlaceRepository } from '../generics';
@@ -24,12 +24,15 @@ export class PlaceRepository<T>
   extends MongoGenericRepository<T>
   implements IPlaceRepository<T>
 {
-  getPlacesByCompany(company: Types.ObjectId): Promise<any[]> {
+  getPlacesByCompany({ company, houses}: IPlaceListByCompany): Promise<any[]> {
     return this._repository.aggregate([
       {
         $match: {
           company,
           isDeleted: false,
+          ...(houses?.length && {
+            house: { $in: houses }
+          })
         }
       },
       {

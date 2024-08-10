@@ -144,3 +144,8 @@ export interface IPlaceList {
   isOnTop?: boolean;
   status?: EPlaceStatus[];
 }
+
+export interface IPlaceListByCompany {
+  company: Types.ObjectId;
+  houses?: Types.ObjectId[];
+}

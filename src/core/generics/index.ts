@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { Medias } from '../entities/places/place-media.entity';
-import { IPlaceList } from 'src/features/places/places.helper';
+import { IPlaceList, IPlaceListByCompany } from 'src/features/places/places.helper';
 import { IPlaceCAAmount, IReservationList, IReservationRecap, IReservationsByPlace } from 'src/features/reservations/reservations.helper';
 import { IHouseList } from 'src/features/houses/houses.helper';
 import { IUsersList } from 'src/features/users/users.helper';
@@ -73,7 +73,7 @@ export abstract class IPlaceRepository<T> {
   abstract list(filter: IPlaceList): Promise<any[]>;
   abstract populatePlaceInfos(value: any): Promise<any>;
 
-  abstract getPlacesByCompany(company: Types.ObjectId): Promise<any[]>
+  abstract getPlacesByCompany(filter: IPlaceListByCompany): Promise<any[]>
 }
 
 export abstract class IReservationRepository<T> {

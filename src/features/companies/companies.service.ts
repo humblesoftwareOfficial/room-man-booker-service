@@ -284,16 +284,33 @@ export class CompaniesService {
           error: 'Bad request!',
         });
       }
-      const places = await this.dataServices.places.getPlacesByCompany(
-        company['_id'],
-      );
+      let houses = []
+      if (data.houses?.length) {
+        houses = await this.dataServices.houses.findAllByCodes(data.houses, '_id code name company');
+        if (houses.length !== data.houses.length) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            error: 'House not found',
+            message: 'There ae one or more houses not found'
+          })
+        }
+      }
+      const places = await this.dataServices.places.getPlacesByCompany({
+        company: company['_id'],
+        houses: houses?.length ? houses?.flatMap((h) => h['_id']) : [],
+      });
       if (!places?.length) {
         return succeed({
           data: {
-            values: [],
+            ca: 0,
+            totalReservations: { count: 0 },
+            doneReservations: { count: 0 },
+            cancelledReservations: { count: 0 },
+            currentReservations: { count: 0 },
           },
         });
       }
+
       const startDate = stringToDate(data.startDate);
       const endDate = stringToDate(data.endDate);
       if (!isValidIntervalDate(startDate, endDate)) {
