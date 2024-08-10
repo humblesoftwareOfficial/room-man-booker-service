@@ -135,9 +135,9 @@ export class CompaniesService {
           _id: p
         }));
       } else {
-        places = await this.dataServices.places.getPlacesByCompany(
-          company['_id'],
-        );
+        places = await this.dataServices.places.getPlacesByCompany({
+          company: company['_id'],
+        });
       }
       if (!places?.length) {
         return succeed({
