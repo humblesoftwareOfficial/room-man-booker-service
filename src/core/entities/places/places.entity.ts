@@ -79,6 +79,9 @@ export class Place extends DefaultAttributes {
 
   @Prop({ type: [Types.ObjectId], ref: 'Reservation', default: [] })
   reservationsRequests?: Reservation[] | Types.ObjectId[];
+
+  @Prop({ type: Boolean, default: false })
+  isVip?: boolean;
 }
 
 export const PlaceSchema = SchemaFactory.createForClass(Place);

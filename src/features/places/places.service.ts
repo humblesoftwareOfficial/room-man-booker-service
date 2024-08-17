@@ -421,6 +421,10 @@ export class PlacesService {
         ...(value.currentStatus === EPlaceStatus.AVAILABLE && {
           reservation: null,
         }),
+        ...(value.isVip !== null &&
+          value.isVip !== undefined && {
+            isVip: value.isVip,
+          }),
       };
       await this.dataServices.places.update(place.code, update);
       if (value.currentStatus === EPlaceStatus.AVAILABLE) {

@@ -12,7 +12,7 @@ const PopulateOptions = [
   },
   {
     path: 'house',
-    select: '-_id code name address description',
+    select: '-_id code name address description position',
   },
   {
     path: 'reservation',

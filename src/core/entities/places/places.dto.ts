@@ -212,6 +212,11 @@ export class UpdatePlaceDto {
     message: 'Current status is required!',
   })
   currentStatus: EPlaceStatus;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  isVip: boolean;
 }
 
 export class AddMediasDto {
