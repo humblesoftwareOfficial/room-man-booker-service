@@ -555,6 +555,55 @@ export class PlacesService {
     }
   }
 
+  async publicList(filter: PlaceListDto): Promise<Result> {
+    try {
+      const { limit, page } = filter;
+      const skip = (page - 1) * limit;
+      let companiesId = [];
+      let housesId = [];
+      const result = await this.dataServices.places.list({
+        limit: limit,
+        skip,
+        searchTerm: filter.searchTerm,
+        types: filter.types,
+        properties: filter.properties,
+        maxPrice: filter.maxPrice,
+        minPrice: filter.minPrice,
+        companies: companiesId,
+        houses: housesId,
+        isOnTop: filter.isOnTop,
+        isAvailable: filter.isAvailable,
+        status: filter.status,
+      });
+      if (!result.length) {
+        return succeed({
+          code: HttpStatus.BAD_REQUEST,
+          message: '',
+          data: { total: 0, places: [] },
+        });
+      }
+      const total = result[0].total;
+      const places = result.flatMap((i) => ({
+        ...i.places,
+        total: undefined,
+      }));
+      await this.dataServices.places.populatePlaceInfos(places);
+      return succeed({
+        code: HttpStatus.OK,
+        message: '',
+        data: { total, places },
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while getting places. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+
+
   async __alertEndOfReservation(
     reservationId: Types.ObjectId,
     companyId: Types.ObjectId,

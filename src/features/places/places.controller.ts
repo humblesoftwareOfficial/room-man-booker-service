@@ -21,7 +21,6 @@ import { isValidPlaceCode } from './places.helper';
 import { InvalidCodeException } from 'src/core/exceptions/invalid-code.exception';
 
 @ApiTags('Places')
-@UseGuards(JwtAuthGuard)
 @Controller('places')
 export class PlacesController {
   constructor(private service: PlacesService) {}
@@ -85,6 +84,7 @@ export class PlacesController {
   @ApiBadRequestResponse({
     description: 'Bad Request.',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/list')
   async list(@Body() value: PlaceListDto) {
     return this.service.list(value);
@@ -104,6 +104,7 @@ export class PlacesController {
   @ApiNotFoundResponse({
     description: 'Place not found.',
   })
+  @UseGuards(JwtAuthGuard)
   @Get(':code')
   async findOne(@Param('code') code: string) {
     if (!isValidPlaceCode(code)) {
@@ -142,5 +143,21 @@ export class PlacesController {
   @Post('/update-medias')
   async updateMedias(@Body() value: UpdateMediasDto) {
     return this.service.updateMedias(value);
+  }
+
+  @ApiCreatedResponse({
+    description: 'List of places.',
+    type: Place,
+    isArray: true,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @Post('/public-list')
+  async publicList(@Body() value: PlaceListDto) {
+    return this.service.publicList(value);
   }
 }
