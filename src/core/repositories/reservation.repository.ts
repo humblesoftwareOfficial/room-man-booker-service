@@ -143,7 +143,8 @@ export class ReservationRepository<T>
     status,
     companiesId,
     placesId,
-    housesId
+    housesId,
+    searchTerm,
   }: IReservationList): Promise<any[]> {
     return this._repository
       .aggregate([
@@ -160,6 +161,30 @@ export class ReservationRepository<T>
             }),
             ...(placesId?.length && {
               place: { $in: placesId },
+            }),
+            ...(searchTerm?.length && {
+              $or: [
+                {
+                  "user.firstName": {
+                    $regex: new RegExp(searchTerm, 'i'),
+                  },
+                },
+                {
+                  "user.lastName": {
+                    $regex: new RegExp(searchTerm, 'i'),
+                  },
+                },
+                {
+                  "user.phone": {
+                    $regex: new RegExp(searchTerm, 'i'),
+                  },
+                },
+                {
+                  "user.identification": {
+                    $regex: new RegExp(searchTerm, 'i'),
+                  },
+                },
+              ],
             }),
           },
         },

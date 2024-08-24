@@ -324,6 +324,9 @@ export class ReservationsService {
         companiesId: user.company ? [user.company as Types.ObjectId] : [],
         placesId: places?.length ? places.flatMap((o) => o['_id']) : [],
         housesId: house ? [house['_id']] : [],
+        ...(filter.searchTerm?.length && {
+          searchTerm: filter.searchTerm,
+        })
       });
       if (!result.length) {
         return succeed({
