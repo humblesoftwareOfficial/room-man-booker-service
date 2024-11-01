@@ -94,6 +94,56 @@ export class NewReservationDto {
   medias: ReservationMediaDto[];
 }
 
+export class NewPublicReservationRequestDto {
+  @IsNotEmpty({ message: 'User first name is required.' })
+  @IsString()
+  firstName: string;
+
+  @IsNotEmpty({ message: 'User last name is required.' })
+  @IsString()
+  lastName: string;
+
+  @IsString()
+  phone: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  identification: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  tokenValue: string;
+
+  @IsNotEmpty({ message: 'Place is required.' })
+  @Validate(PlaceCodeValidator)
+  place: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  price: number;
+
+  // @ApiProperty({ required: false })
+  // @IsOptional()
+  @Validate(IsValidFullDate)
+  startDate: string;
+
+  // @ApiProperty({ required: false })
+  // @IsOptional()
+  @Validate(IsValidFullDate)
+  endDate: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsEnum(EReservationDuration, {
+    message: 'reservation duration must be a valid EReservationDuration value',
+  })
+  duration: EReservationDuration;
+}
+
 export class UpdateReservationDto {
   @ApiProperty({ required: false })
   @IsOptional()
@@ -191,6 +241,16 @@ export class ReservationListDto extends PaginationDto {
   @IsNotEmpty()
   @Validate(HouseCodeValidator)
   house: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  phoneNumber: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  countryCode: string;
 }
 
 export class ReservationRequestDto extends NewReservationDto {}

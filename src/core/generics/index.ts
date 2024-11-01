@@ -4,6 +4,7 @@ import { IPlaceList, IPlaceListByCompany } from 'src/features/places/places.help
 import { IPlaceCAAmount, IReservationList, IReservationRecap, IReservationsByPlace } from 'src/features/reservations/reservations.helper';
 import { IHouseList } from 'src/features/houses/houses.helper';
 import { IUsersList } from 'src/features/users/users.helper';
+import { IFavoritePlacesList } from 'src/features/favorites/favorites.helper';
 
 export abstract class IGenericRepository<T> {
   abstract findAll(filterAttributes: string): Promise<T[]>;
@@ -82,4 +83,8 @@ export abstract class IReservationRepository<T> {
   abstract getReservationsByPlace(filter: IReservationsByPlace): Promise<any[]>;
   abstract getPlaceTotalAmount(filter: IPlaceCAAmount): Promise<any[]>;
   abstract getRecap(filter: IReservationRecap): Promise<any[]>;
+}
+
+export abstract class IFavoriteRepository<T> {
+  abstract getUserFavorites(filter: IFavoritePlacesList): Promise<any[]>;
 }

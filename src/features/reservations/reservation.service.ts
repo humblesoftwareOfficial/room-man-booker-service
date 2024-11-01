@@ -6,6 +6,7 @@ import {
   AcceptReservationRequestDto,
   DeclineReservationRequestDto,
   ExtendReservationDto,
+  NewPublicReservationRequestDto,
   NewReservationDto,
   ReservationListDto,
   ReservationRequestDto,
@@ -50,7 +51,7 @@ export class ReservationsService {
       }
       const place = await this.dataServices.places.findOne(
         value.place,
-        '_id code isDeleted company description house',
+        '_id code isDeleted company description house prices',
       );
       if (!place) {
         return fail({
@@ -101,7 +102,9 @@ export class ReservationsService {
             url: o.url,
             code: codeGenerator('MED'),
           })),
-        })
+        }),
+        createdBy: user['_id'],
+        placeCurrentPrices: place.prices || [],
       };
       const createdReservation = await this.dataServices.reservations.create(
         newReservation,
@@ -326,7 +329,110 @@ export class ReservationsService {
         housesId: house ? [house['_id']] : [],
         ...(filter.searchTerm?.length && {
           searchTerm: filter.searchTerm,
-        })
+        }),
+      });
+      if (!result.length) {
+        return succeed({
+          code: HttpStatus.BAD_REQUEST,
+          message: '',
+          data: { total: 0, reservations: [] },
+        });
+      }
+      const total = result[0].total;
+      const reservations = result.flatMap((i) => ({
+        ...i.reservations,
+        total: undefined,
+        house: undefined,
+      }));
+      await this.dataServices.reservations.populateReservationInfos(
+        reservations,
+      );
+      return succeed({
+        code: HttpStatus.OK,
+        message: '',
+        data: { total, reservations },
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while getting reservations. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async publicList(filter: ReservationListDto): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        filter.by,
+        '_id company account_type house',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'user not found!',
+          error: 'Not found',
+        });
+      }
+      if (user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This user is no longer active',
+          error: 'Bad request',
+        });
+      }
+      let places = [];
+      if (filter.places?.length) {
+        places = await this.dataServices.places.findAllByCodes(
+          filter.places,
+          '_id',
+        );
+        if (!places.length) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'Places not found',
+            error: 'Not found',
+          });
+        }
+      }
+      let house = null;
+      if (filter.house) {
+        house = await this.dataServices.houses.findOne(
+          filter.house,
+          '_id company',
+        );
+        if (!house) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'House not found',
+            error: 'Not found',
+          });
+        }
+        if (
+          house.company.toString() !== user.company.toString() &&
+          user.account_type !== EAccountType.SUPER_ADMIN
+        ) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'House not found',
+            error: 'Not found',
+          });
+        }
+      }
+      const { limit, page } = filter;
+      const skip = (page - 1) * limit;
+      const result = await this.dataServices.reservations.list({
+        limit: limit,
+        skip,
+        status: filter.status,
+        companiesId: user.company ? [user.company as Types.ObjectId] : [],
+        placesId: places?.length ? places.flatMap((o) => o['_id']) : [],
+        housesId: house ? [house['_id']] : [],
+        ...(filter.searchTerm?.length && {
+          searchTerm: filter.searchTerm,
+        }),
+        userPhone: filter.phoneNumber,
+        userCountryCode: filter.countryCode,
       });
       if (!result.length) {
         return succeed({
@@ -380,7 +486,7 @@ export class ReservationsService {
       }
       const place = await this.dataServices.places.findOne(
         value.place,
-        '_id code isDeleted company description house',
+        '_id code isDeleted company description house prices',
       );
       if (!place) {
         return fail({
@@ -426,6 +532,8 @@ export class ReservationsService {
             value: value.price,
           },
         }),
+        createdBy: user['_id'],
+        placeCurrentPrices: place.prices || [],
       };
       const createdReservationRequest =
         await this.dataServices.reservations.create(newReservation);
@@ -445,6 +553,95 @@ export class ReservationsService {
         authorAction: value.by,
         notificationType: 'Demande de réservation',
         message: `Nouvelle demande de réservation au nom de: ${value.firstName} ${value.lastName}`,
+      });
+      return succeed({
+        code: HttpStatus.OK,
+        data: {
+          status: EReservationStatus.ON_REQUEST,
+        },
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while registering new reservation request. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async publicReservationRequest(
+    value: NewPublicReservationRequestDto,
+  ): Promise<Result> {
+    try {
+      const place = await this.dataServices.places.findOne(
+        value.place,
+        '_id code isDeleted company description house prices',
+      );
+      if (!place) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'place not found!',
+          error: 'Not found',
+        });
+      }
+      // if (place.isDeleted) {
+      //   return fail({
+      //     code: HttpStatus.BAD_REQUEST,
+      //     message: 'This place is no longer active',
+      //     error: 'Bad request',
+      //   });
+      // }
+      const startDate = stringToFullDate(value.startDate);
+      const endDate = value.endDate
+        ? stringToFullDate(value.endDate)
+        : startDate;
+      const operationDate = new Date();
+      const newReservation: Reservation = {
+        code: codeGenerator('RES'),
+        createdAt: operationDate,
+        lastUpdatedAt: operationDate,
+        status: EReservationStatus.ON_REQUEST,
+        user: {
+          firstName: value.firstName,
+          lastName: value.lastName,
+          phone: value.phone,
+          tokenValue: value.tokenValue,
+          identification: value.identification,
+        },
+        startDate,
+        endDate,
+        duration: value.duration,
+        place: place['_id'],
+        company: place.company,
+        house: place.house,
+        ...(hasValue(value.price) && {
+          price: {
+            description: '',
+            devise: EDevise.FCFA,
+            value: value.price,
+          },
+        }),
+        isPublicRequest: true,
+        placeCurrentPrices: place.prices || [],
+      };
+      const createdReservationRequest =
+        await this.dataServices.reservations.create(newReservation);
+      await this.dataServices.places.update(place.code, {
+        $addToSet: {
+          reservationsRequests: createdReservationRequest['_id'],
+        },
+      });
+      this.__pushNotifications({
+        client: {
+          firstName: value.firstName,
+          lastName: value.lastName,
+          phone: value.phone,
+        },
+        companyId: place.company,
+        houseId: place.house,
+        authorAction: null,
+        notificationType: 'NOOYAL• Demande de réservation',
+        message: `NOOYAL • Demande de réservation au nom de: ${value.firstName} ${value.lastName}`,
       });
       return succeed({
         code: HttpStatus.OK,
@@ -542,7 +739,8 @@ export class ReservationsService {
             lastUpdatedBy: user['_id'],
             user: {
               ...reservation.user,
-              identification: value.identification || reservation.user.identification,
+              identification:
+                value.identification || reservation.user.identification,
             },
             price: {
               ...reservation.price,
@@ -553,7 +751,7 @@ export class ReservationsService {
                 url: o.url,
                 code: codeGenerator('MED'),
               })),
-            })
+            }),
           }),
         ]);
         this.__pushNotifications({
@@ -816,6 +1014,7 @@ export class ReservationsService {
     message,
   }: ISendPushNotifications) {
     try {
+      console.log({ companyId });
       const [users, company, house] = await Promise.all([
         this.dataServices.users.findUsersByCompany(
           companyId as Types.ObjectId,
@@ -830,7 +1029,7 @@ export class ReservationsService {
           '_id code name',
         ),
       ]);
-      // console.log({ users })
+      console.log({ users });
       const messages = [];
       for (const user of users) {
         if (!user.isDeleted && user.isActive) {

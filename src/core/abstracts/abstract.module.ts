@@ -11,6 +11,7 @@ import {
   ReservationSchema,
 } from '../entities/reservation/reservation.entity';
 import { House, HouseSchema } from '../entities/houses/houses.entity';
+import { Favorite, FavoriteSchema } from '../entities/favorites/favorites.entity';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { House, HouseSchema } from '../entities/houses/houses.entity';
       { name: House.name, schema: HouseSchema },
       { name: Place.name, schema: PlaceSchema },
       { name: Reservation.name, schema: ReservationSchema },
+      { name: Favorite.name, schema: FavoriteSchema },
     ]),
   ],
   providers: [

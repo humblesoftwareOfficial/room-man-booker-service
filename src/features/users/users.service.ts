@@ -9,7 +9,7 @@ import { Result, fail, succeed } from 'src/config/http-response';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import { EAccountType, EUserGender, getDefaultUserInfos } from './users.helper';
 import { JwtService } from '@nestjs/jwt';
-import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UpdateUserDto, UsersListingDto } from 'src/core/entities/users/user.dto';
+import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UpdateUserDto, UserRegistrationDto, UsersListingDto } from 'src/core/entities/users/user.dto';
 import { User } from 'src/core/entities/users/user.entity';
 
 @Injectable()
@@ -236,6 +236,52 @@ export class UsersService {
     } catch (error) {
       console.log({ error });
       throw new HttpException("Error while removing user", HttpStatus.INTERNAL_SERVER_ERROR)
+    }
+  }
+
+  async registration(newUser: UserRegistrationDto): Promise<Result> {
+    try {
+      const salt = await bcrypt.genSalt();
+      const password = newUser.password;
+      const user: User = {
+        code: codeGenerator('USR'),
+        phone: newUser.phone,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        password: await bcrypt.hash(password, salt),
+        defaultPassword: password,
+        gender: EUserGender.OTHER,
+        push_tokens: newUser.push_tokens || [],
+        createdAt: new Date(),
+        lastUpdatedAt: new Date(),
+        account_type: EAccountType.DEFAULT,
+      };
+      const createdUser = await this.dataServices.users.create(user);
+      const payload = {
+        userId: createdUser['_id'],
+        code: user.code,
+      };
+      return succeed({
+        code: HttpStatus.CREATED,
+        data: {
+          ...getDefaultUserInfos(createdUser),
+          access_token: this.jwtService.sign(payload),
+        },
+        message: 'User successfully registered.',
+      });
+    } catch (error) {
+      if (error?.code === 11000) {
+        return fail({
+          code: 400,
+          message: 'An user with the same infos like (phone) already exists.',
+          error: 'Already exist',
+        });
+      } else {
+        throw new HttpException(
+          `Error while creating new user. Try again.`,
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
     }
   }
 }

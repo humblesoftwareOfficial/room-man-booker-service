@@ -88,6 +88,10 @@ export class MongoGenericRepository<T> implements IGenericRepository<T> {
     return this._repository.populate(value, populateOptions);
   }
 
+  updateWithCustomFilter(filter: any, update: any): Promise<T> {
+    return this._repository.findOneAndUpdate(filter, update, { new: true, upsert: true }).exec()
+  }
+
   // getLastInsertedDocument(): Promise<T[]> {
   //   return this._repository.find({}).sort({ _id: -1 }).limit(1).exec();
   // }

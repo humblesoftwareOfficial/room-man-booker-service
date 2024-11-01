@@ -12,6 +12,8 @@ import { House } from '../entities/houses/houses.entity';
 import { HouseRepository } from '../repositories/house.repository';
 import { Reservation } from '../entities/reservation/reservation.entity';
 import { ReservationRepository } from '../repositories/reservation.repository';
+import { Favorite } from '../entities/favorites/favorites.entity';
+import { FavoriteRepository } from '../repositories/favorite.repository';
 
 @Injectable()
 export class MongoDataServices
@@ -22,6 +24,7 @@ export class MongoDataServices
   places: PlaceRepository<Place>;
   houses: HouseRepository<House>;
   reservations: ReservationRepository<Reservation>;
+  favorites: FavoriteRepository<Favorite>;
   
   constructor(
     @InjectModel(User.name)
@@ -34,6 +37,8 @@ export class MongoDataServices
     private placeRepository: Model<Place>,
     @InjectModel(Reservation.name)
     private reservationRepository: Model<Reservation>,
+    @InjectModel(Favorite.name)
+    private favoriteRepository: Model<Favorite>,
   ) {}
   
   onApplicationBootstrap() {
@@ -42,5 +47,6 @@ export class MongoDataServices
     this.houses = new HouseRepository<House>(this.houseRepository);
     this.places = new PlaceRepository<Place>(this.placeRepository);
     this.reservations = new ReservationRepository<Reservation>(this.reservationRepository);
+    this.favorites = new FavoriteRepository<Favorite>(this.favoriteRepository);
   }
 }

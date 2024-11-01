@@ -214,3 +214,26 @@ export class RemoveUserDto {
   @Validate(UserCodeValidator)
   user: string;
 }
+
+export class UserRegistrationDto {
+  @IsNotEmpty({ message: 'User first name is required.' })
+  @IsString()
+  firstName: string;
+
+  @IsNotEmpty({ message: 'User last name is required.' })
+  @IsString()
+  lastName: string;
+
+  @IsString()
+  phone: string;
+
+  @IsNotEmpty({ message: 'User password is required.' })
+  @IsString()
+  password: string;
+
+  @IsOptional()
+  @IsArray({
+    message: 'Tokens value must an array of valid token value',
+  })
+  push_tokens: string[];
+}

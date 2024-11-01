@@ -19,7 +19,7 @@ export class User extends DefaultAttributes {
   phone: string;
 
   @Prop({ type: String, unique: true, sparse: true })
-  email: string;
+  email?: string;
 
   @Prop({ type: String, enum: EUserGender, default: null })
   gender: EUserGender;
@@ -28,7 +28,7 @@ export class User extends DefaultAttributes {
   password: string;
 
   @Prop({ type: String, default: '' })
-  address: string;
+  address?: string;
 
   @Prop({ type: [], default: [] })
   push_tokens: string[];

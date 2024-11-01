@@ -63,6 +63,8 @@ export interface IReservationList {
   placesId?: Types.ObjectId[];
   housesId?: Types.ObjectId[];
   searchTerm?: string;
+  userPhone?: string;
+  userCountryCode?: string;
 }
 
 export enum EReservationDuration {

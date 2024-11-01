@@ -9,6 +9,7 @@ import { CompaniesModule } from './features/companies/companies.module';
 import { HousesModule } from './features/houses/houses.module';
 import { PlacesModule } from './features/places/places.module';
 import { ReservationsModule } from './features/reservations/reservation.module';
+import { FavoritesModule } from './features/favorites/favorites.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ReservationsModule } from './features/reservations/reservation.module';
     HousesModule,
     PlacesModule,
     ReservationsModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

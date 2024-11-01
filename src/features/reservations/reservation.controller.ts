@@ -8,11 +8,10 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../authentication/jwt.auth.guard';
 import { Reservation } from 'src/core/entities/reservation/reservation.entity';
-import { AcceptReservationRequestDto, ExtendReservationDto, NewReservationDto, ReservationListDto, UpdateReservationDto } from 'src/core/entities/reservation/reservation.dto';
+import { AcceptReservationRequestDto, ExtendReservationDto, NewPublicReservationRequestDto, NewReservationDto, ReservationListDto, UpdateReservationDto } from 'src/core/entities/reservation/reservation.dto';
 
 
 @ApiTags('Reservation')
-@UseGuards(JwtAuthGuard)
 @Controller('reservations')
 export class ReservationsController {
   constructor(private service: ReservationsService) {}
@@ -27,6 +26,7 @@ export class ReservationsController {
   @ApiBadRequestResponse({
     description: 'Bad Request.',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/new')
   async create(@Body() value: NewReservationDto) {
     return this.service.create(value);
@@ -66,8 +66,9 @@ export class ReservationsController {
   }
 
   @ApiCreatedResponse({
-    description: 'New reservation successfully registered.',
+    description: 'List of reservations.',
     type: Reservation,
+    isArray: true,
   })
   @ApiInternalServerErrorResponse({
     description: 'Internal server error occured.',
@@ -75,9 +76,10 @@ export class ReservationsController {
   @ApiBadRequestResponse({
     description: 'Bad Request.',
   })
-  @Post('/request')
-  async reservationRequest(@Body() value: NewReservationDto) {
-    return this.service.reservationRequest(value);
+  @UseGuards(JwtAuthGuard)
+  @Post('/public-list')
+  async publicList(@Body() value: ReservationListDto) {
+    return this.service.publicList(value);
   }
 
   @ApiCreatedResponse({
@@ -90,6 +92,39 @@ export class ReservationsController {
   @ApiBadRequestResponse({
     description: 'Bad Request.',
   })
+  @UseGuards(JwtAuthGuard)
+  @Post('/request')
+  async reservationRequest(@Body() value: NewReservationDto) {
+    return this.service.reservationRequest(value);
+  }
+
+
+  @ApiCreatedResponse({
+    description: 'New reservation successfully registered.',
+    type: Reservation,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @Post('/public-request')
+  async publicReservationRequest(@Body() value: NewPublicReservationRequestDto) {
+    return this.service.publicReservationRequest(value);
+  }
+
+  @ApiCreatedResponse({
+    description: 'New reservation successfully registered.',
+    type: Reservation,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @UseGuards(JwtAuthGuard)
   @Post('/accept-request')
   async acceptReservationRequest(@Body() value: AcceptReservationRequestDto) {
     return this.service.acceptReservationRequest(value);
@@ -105,6 +140,7 @@ export class ReservationsController {
   @ApiBadRequestResponse({
     description: 'Bad Request.',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/decline-request')
   async declineReservationRequest(@Body() value: AcceptReservationRequestDto) {
     return this.service.declineReservationRequest(value);
@@ -120,6 +156,7 @@ export class ReservationsController {
   @ApiBadRequestResponse({
     description: 'Bad Request.',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/extend')
   async extendReservation(@Body() value: ExtendReservationDto) {
     return this.service.extendReservation(value);

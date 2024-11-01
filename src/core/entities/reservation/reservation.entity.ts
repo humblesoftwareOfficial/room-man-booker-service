@@ -64,6 +64,12 @@ export class Reservation extends DefaultAttributes {
 
   @Prop({ type: [], default: [] })
   medias?: Medias[];
+
+  @Prop({ type: Boolean, default: false })
+  isPublicRequest?: boolean;
+
+  @Prop({ type: [], default: [] })
+  placeCurrentPrices: PlacePrice[];
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);

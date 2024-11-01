@@ -3,10 +3,9 @@ import { UsersService } from "./users.service";
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../authentication/jwt.auth.guard";
 import { User } from "src/core/entities/users/user.entity";
-import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UsersListingDto } from "src/core/entities/users/user.dto";
+import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UserRegistrationDto, UsersListingDto } from "src/core/entities/users/user.dto";
 
 @ApiTags('Users')
-@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
   constructor(private service: UsersService) {}
@@ -21,6 +20,7 @@ export class UsersController {
   @ApiBadRequestResponse({
     description: 'Bad Request. most often duplicated values such as (phone, email).',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/')
   async create(@Body() newUserDto: NewUserDto) {
     return this.service.create(newUserDto);
@@ -37,6 +37,7 @@ export class UsersController {
   @ApiNotFoundResponse({
     description: 'User not found!',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/pushtokens')
   async updatePushTokens(@Body() value: UpdatePushTokenDto) {
     return this.service.updatePushToken(value);
@@ -54,6 +55,7 @@ export class UsersController {
   @ApiNotFoundResponse({
     description: 'User not found!',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/list')
   async list(@Body() value: UsersListingDto) {
     return this.service.list(value);
@@ -70,6 +72,7 @@ export class UsersController {
   @ApiNotFoundResponse({
     description: 'User not found!',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/remove')
   async removeUser(@Body() value: RemoveUserDto) {
     return this.service.removeUser(value);
@@ -86,8 +89,14 @@ export class UsersController {
   @ApiNotFoundResponse({
     description: 'User not found!',
   })
+  @UseGuards(JwtAuthGuard)
   @Post('/pushtokens/remove')
   async removePushToken(@Body() value: UpdatePushTokenDto) {
     return this.service.removePushToken(value);
+  }
+
+  @Post('/registration')
+  async registration(@Body() newUserDto: UserRegistrationDto) {
+    return this.service.registration(newUserDto);
   }
 }
