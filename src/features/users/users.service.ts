@@ -9,7 +9,7 @@ import { Result, fail, succeed } from 'src/config/http-response';
 import { IGenericDataServices } from 'src/core/generics/generic-data.services';
 import { EAccountType, EUserGender, getDefaultUserInfos } from './users.helper';
 import { JwtService } from '@nestjs/jwt';
-import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UpdateUserDto, UserRegistrationDto, UsersListingDto } from 'src/core/entities/users/user.dto';
+import { GetUserByPhoneNumberDto, NewUserDto, RemoveUserDto, UpdatePushTokenDto, UpdateUserDto, UserRegistrationDto, UsersListingDto } from 'src/core/entities/users/user.dto';
 import { User } from 'src/core/entities/users/user.entity';
 
 @Injectable()
@@ -235,7 +235,7 @@ export class UsersService {
       })
     } catch (error) {
       console.log({ error });
-      throw new HttpException("Error while removing user", HttpStatus.INTERNAL_SERVER_ERROR)
+      throw new HttpException("Error while removing user", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -270,11 +270,12 @@ export class UsersService {
         message: 'User successfully registered.',
       });
     } catch (error) {
+      console.log({ error})
       if (error?.code === 11000) {
         return fail({
           code: 400,
           message: 'An user with the same infos like (phone) already exists.',
-          error: 'Already exist',
+          error: '11000',
         });
       } else {
         throw new HttpException(
@@ -282,6 +283,25 @@ export class UsersService {
           HttpStatus.INTERNAL_SERVER_ERROR,
         );
       }
+    }
+  }
+
+  async findUserByPhone(value: GetUserByPhoneNumberDto): Promise<Result>  {
+    try {
+      const user = await this.dataServices.users.findByNumber(value.phoneNumber, value.countryCode)
+      if (!user) {
+        return fail({
+          error: 'Not found',
+        })
+      }
+      return succeed({
+        data: {
+          phone: user.phone,
+        }
+      })
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException("Error while getting user", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }

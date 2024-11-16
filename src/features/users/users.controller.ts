@@ -3,7 +3,7 @@ import { UsersService } from "./users.service";
 import { ApiBadRequestResponse, ApiCreatedResponse, ApiInternalServerErrorResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../authentication/jwt.auth.guard";
 import { User } from "src/core/entities/users/user.entity";
-import { NewUserDto, RemoveUserDto, UpdatePushTokenDto, UserRegistrationDto, UsersListingDto } from "src/core/entities/users/user.dto";
+import { GetUserByPhoneNumberDto, NewUserDto, RemoveUserDto, UpdatePushTokenDto, UserRegistrationDto, UsersListingDto } from "src/core/entities/users/user.dto";
 
 @ApiTags('Users')
 @Controller('users')
@@ -98,5 +98,10 @@ export class UsersController {
   @Post('/registration')
   async registration(@Body() newUserDto: UserRegistrationDto) {
     return this.service.registration(newUserDto);
+  }
+
+  @Post('/exists')
+  async findUserByPhone(@Body() value: GetUserByPhoneNumberDto) {
+    return this.service.findUserByPhone(value);
   }
 }

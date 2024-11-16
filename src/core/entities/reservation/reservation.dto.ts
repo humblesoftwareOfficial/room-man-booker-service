@@ -126,13 +126,13 @@ export class NewPublicReservationRequestDto {
   @IsInt()
   price: number;
 
-  // @ApiProperty({ required: false })
-  // @IsOptional()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @Validate(IsValidFullDate)
   startDate: string;
 
-  // @ApiProperty({ required: false })
-  // @IsOptional()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @Validate(IsValidFullDate)
   endDate: string;
 

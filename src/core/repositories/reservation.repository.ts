@@ -196,10 +196,8 @@ export class ReservationRepository<T>
                   },
                 },
                 {
-                  "user.phone": {
-                    $regex: new RegExp(`\\+${userCountryCode}${userPhone}`, 'i'),
-                  },
-                },
+                  "user.phone": `+${userCountryCode}${userPhone}`,
+                }
               ],
             })
           },

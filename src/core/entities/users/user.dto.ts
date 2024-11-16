@@ -237,3 +237,13 @@ export class UserRegistrationDto {
   })
   push_tokens: string[];
 }
+
+export class GetUserByPhoneNumberDto {
+  @IsNotEmpty({ message: 'Phone number is required'})
+  @IsString()
+  phoneNumber: string;
+
+  @IsNotEmpty({ message: 'Country code is required'})
+  @IsString()
+  countryCode: string;
+}

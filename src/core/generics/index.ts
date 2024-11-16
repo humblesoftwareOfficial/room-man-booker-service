@@ -31,7 +31,8 @@ export abstract class IUserRepository<T> {
   abstract authentication(phone: string, password: string): Promise<T>;
   abstract updatePushTokens(code: string, pushtoken: string): Promise<T>;
   abstract removePushTokens(code: string, pushtoken: string): Promise<T>;
-  abstract list(filter: IUsersList): Promise<any[]>
+  abstract list(filter: IUsersList): Promise<any[]>;
+  abstract findByNumber(phone: string, countryCode: string): Promise<T>;
 }
 
 export abstract class ICompanyRepository<T> {

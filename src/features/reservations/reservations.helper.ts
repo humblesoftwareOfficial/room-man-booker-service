@@ -128,3 +128,10 @@ export interface IReservationRecap {
   endDate?: Date;
   status?: EReservationStatus[]
 }
+
+export interface ISendPushNotificationsClient {
+  title: string;
+  tokenValue: string;
+  message: string;
+  extras: string;
+}

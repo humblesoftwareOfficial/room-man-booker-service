@@ -7,6 +7,16 @@ export class UserRepository<T>
   extends MongoGenericRepository<T>
   implements IUserRepository<T>
 {
+  findByNumber(phone: string, countryCode: string): Promise<T> {
+    return this._repository.findOne({ $or: [
+      {
+        phone,
+      },
+      {
+        phone: `+${countryCode}${phone}`,
+      },
+    ],}).exec();
+  }
   
   list({ companiesId, skip, limit, roles }: IUsersList): Promise<any[]> {
     return this._repository

@@ -18,6 +18,7 @@ import { codeGenerator, hasValue } from 'src/config/code-generator';
 import {
   EReservationStatus,
   ISendPushNotifications,
+  ISendPushNotificationsClient,
   getReservationUpdateStatusMessage,
 } from './reservations.helper';
 import { formatDateToString, stringToFullDate } from '../helpers/date.helper';
@@ -425,7 +426,7 @@ export class ReservationsService {
         limit: limit,
         skip,
         status: filter.status,
-        companiesId: user.company ? [user.company as Types.ObjectId] : [],
+        // companiesId: user.company ? [user.company as Types.ObjectId] : [],
         placesId: places?.length ? places.flatMap((o) => o['_id']) : [],
         housesId: house ? [house['_id']] : [],
         ...(filter.searchTerm?.length && {
@@ -573,6 +574,7 @@ export class ReservationsService {
     value: NewPublicReservationRequestDto,
   ): Promise<Result> {
     try {
+      console.log({ value })
       const place = await this.dataServices.places.findOne(
         value.place,
         '_id code isDeleted company description house prices',
@@ -711,7 +713,7 @@ export class ReservationsService {
       }
       const place = await this.dataServices.places.findById(
         reservation.place,
-        '_id code house company currentStatus',
+        '_id code house company currentStatus description',
       );
       const operationDate = new Date();
       if (value.start) {
@@ -744,7 +746,7 @@ export class ReservationsService {
             },
             price: {
               ...reservation.price,
-              value: value.price || reservation.price.value,
+              value: value.price || reservation.price?.value,
             },
             ...(value.medias?.length && {
               medias: value.medias?.flatMap((o) => ({
@@ -766,6 +768,14 @@ export class ReservationsService {
           notificationType: 'Réservation démarrée.',
           message: `Réservation démarrée au nom de: ${reservation.user.firstName} ${reservation.user.lastName}`,
         });
+        if (reservation.user.tokenValue) {
+          this.__pushNotificationsClient({
+            message: `Bonjour ${reservation.user.firstName}, nous vous souhaitons un excéllent séjour  au: ${place.description}.`,
+            extras: `${reservation.code}`,
+            title: 'Réservation démarrée',
+            tokenValue: `${reservation.user.tokenValue}`,
+          });
+        }
       } else {
         await this.dataServices.reservations.update(reservation.code, {
           status: EReservationStatus.ACCEPTED,
@@ -784,10 +794,18 @@ export class ReservationsService {
           notificationType: 'Demande de réservation acceptée.',
           message: `Réservation acceptée au nom de: ${reservation.user.firstName} ${reservation.user.lastName}`,
         });
+        if (reservation.user.tokenValue) {
+          this.__pushNotificationsClient({
+            message: `Bonjour ${reservation.user.firstName}, votre demande de réservation pour: ${place.description} a été acceptée.`,
+            extras: `${reservation.code}`,
+            title: 'Demande de réservation acceptée',
+            tokenValue: `${reservation.user.tokenValue}`,
+          });
+        }
       }
       return succeed({
         data: {},
-        message: 'Reservation started.',
+        message: 'Reservation accepted.',
       });
     } catch (error) {
       console.log({ error });
@@ -847,7 +865,7 @@ export class ReservationsService {
       }
       const place = await this.dataServices.places.findById(
         reservation.place,
-        '_id code house company',
+        '_id code house company description',
       );
       await Promise.all([
         this.dataServices.reservations.update(reservation.code, {
@@ -869,6 +887,14 @@ export class ReservationsService {
         notificationType: 'Réservation annulée',
         message: `Réservation annulée pour: ${reservation.user.firstName} ${reservation.user.lastName}`,
       });
+      if (reservation.user.tokenValue) {
+        this.__pushNotificationsClient({
+          message: `Bonjour ${reservation.user.firstName}, votre demande de réservation pour: ${place.description} a été annulée (rejetée).`,
+          extras: `${reservation.code}`,
+          title: 'Réservation annulée (rejetée)',
+          tokenValue: `${reservation.user.tokenValue}`,
+        });
+      }
       /****** NOTIFICATIONS ***************/
       return succeed({
         data: {},
@@ -992,6 +1018,16 @@ export class ReservationsService {
           endDate,
         )} à ${endDate.getHours()}:${endDate.getMinutes()}`,
       });
+      if (reservation.user.tokenValue) {
+        this.__pushNotificationsClient({
+          message: `Bonjour ${reservation.user.firstName}, votre réservation a été prolongée jusqu'au ${formatDateToString(
+          endDate,
+        )} à ${endDate.getHours()}:${endDate.getMinutes()}.`,
+          extras: `${reservation.code}`,
+          title: 'Réservation annulée (rejetée)',
+          tokenValue: `${reservation.user.tokenValue}`,
+        });
+      }
       return succeed({
         code: HttpStatus.OK,
         data: {},
@@ -1061,6 +1097,29 @@ export class ReservationsService {
           }
         }
       }
+      __sendPushNotifications(messages);
+    } catch (error) {
+      console.log({ error });
+    }
+  }
+
+  async __pushNotificationsClient({
+    message,
+    tokenValue,
+    title,
+    extras,
+  }: ISendPushNotificationsClient) {
+    try {
+      if (!Expo.isExpoPushToken(tokenValue)) return;
+      const messages = [];
+      messages.push({
+        to: tokenValue,
+        sound: 'default',
+        title,
+        subtitle: 'NOOYAL • Réservation',
+        body: `${message}`,
+        data: { withSome: `${extras}` },
+      });
       __sendPushNotifications(messages);
     } catch (error) {
       console.log({ error });
