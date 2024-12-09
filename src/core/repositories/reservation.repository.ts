@@ -337,18 +337,18 @@ export class ReservationRepository<T>
       .aggregate([
         {
           $match: {
-            // ...(status?.length && {
-            //   status: { $in: status },
-            // }),
-            // ...(companiesId?.length && {
-            //   company: { $in: companiesId },
-            // }),
-            // ...(housesId?.length && {
-            //   house: { $in: housesId },
-            // }),
-            // ...(placesId?.length && {
-            //   place: { $in: placesId },
-            // }),
+            ...(status?.length && {
+              status: { $in: status },
+            }),
+            ...(companiesId?.length && {
+              company: { $in: companiesId },
+            }),
+            ...(housesId?.length && {
+              house: { $in: housesId },
+            }),
+            ...(placesId?.length && {
+              place: { $in: placesId },
+            }),
             startDate: { $gte: startDate, $lte: endDate },
           },
         },

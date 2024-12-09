@@ -1197,7 +1197,7 @@ export class ReservationsService {
           '_id code name',
         ),
       ]);
-      console.log({ users });
+      // console.log({ users });
       const messages = [];
       for (const user of users) {
         if (!user.isDeleted && user.isActive) {
