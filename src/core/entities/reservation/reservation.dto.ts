@@ -253,6 +253,36 @@ export class ReservationListDto extends PaginationDto {
   countryCode: string;
 }
 
+export class ReservationAgendaList {
+  @IsNotEmpty({ message: 'User is required.' })
+  @Validate(UserCodeValidator)
+  by: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @Validate(ArrayPlaceCodesValidator)
+  places: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNotEmpty()
+  @Validate(HouseCodeValidator)
+  house: string;
+
+  @Validate(IsValidDate)
+  startDate: string;
+
+  @Validate(IsValidDate)
+  endDate: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @Validate(ArrayReservationStatusValidator)
+  status: EReservationStatus[];
+}
+
 export class ReservationRequestDto extends NewReservationDto {}
 
 export class AcceptReservationRequestDto {

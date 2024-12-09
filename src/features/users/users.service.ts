@@ -59,7 +59,7 @@ export class UsersService {
         company: null,
         createdAt: new Date(),
         lastUpdatedAt: new Date(),
-        account_type: EAccountType.SUPER_ADMIN,
+        account_type: data.accountType,
         createdBy: by['_id'],
         lastUpdatedBy: by['_id'],
         defaultPassword: password,

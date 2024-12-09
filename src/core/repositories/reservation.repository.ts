@@ -1,6 +1,7 @@
 import {
   EReservationStatus,
   IPlaceCAAmount,
+  IReservationAgendaList,
   IReservationList,
   IReservationRecap,
   IReservationsByPlace,
@@ -13,7 +14,7 @@ import { Types } from 'mongoose';
 const PopulateOptions = [
   {
     path: 'place',
-    select: '-_id -__v -createdBy -lastUpdatedBy -reservations',
+    select: '-_id -__v -createdBy -lastUpdatedBy -reservations -reservationsRequests -reservation',
     populate: [
       {
         path: 'house',
@@ -67,13 +68,13 @@ export class ReservationRepository<T>
         {
           $project: {
             _id: 0,
-            count: 1
-          }
-        }
+            count: 1,
+          },
+        },
       ])
       .exec();
   }
-  
+
   getPlaceTotalAmount({
     places,
     startDate,
@@ -167,39 +168,40 @@ export class ReservationRepository<T>
             ...(searchTerm?.length && {
               $or: [
                 {
-                  "user.firstName": {
+                  'user.firstName': {
                     $regex: new RegExp(searchTerm, 'i'),
                   },
                 },
                 {
-                  "user.lastName": {
+                  'user.lastName': {
                     $regex: new RegExp(searchTerm, 'i'),
                   },
                 },
                 {
-                  "user.phone": {
+                  'user.phone': {
                     $regex: new RegExp(searchTerm, 'i'),
                   },
                 },
                 {
-                  "user.identification": {
+                  'user.identification': {
                     $regex: new RegExp(searchTerm, 'i'),
                   },
                 },
               ],
             }),
-            ...(userPhone?.length && userCountryCode?.length && {
-              $or: [
-                {
-                  "user.phone": {
-                    $regex: new RegExp(userPhone, 'i'),
+            ...(userPhone?.length &&
+              userCountryCode?.length && {
+                $or: [
+                  {
+                    'user.phone': {
+                      $regex: new RegExp(userPhone, 'i'),
+                    },
                   },
-                },
-                {
-                  "user.phone": `+${userCountryCode}${userPhone}`,
-                }
-              ],
-            })
+                  {
+                    'user.phone': `+${userCountryCode}${userPhone}`,
+                  },
+                ],
+              }),
           },
         },
         {
@@ -326,6 +328,40 @@ export class ReservationRepository<T>
             enterprise: 0,
           },
         },
+      ])
+      .exec();
+  }
+
+  listAgenda({ endDate, startDate, companiesId, housesId, placesId, status}: IReservationAgendaList): Promise<any[]> {
+    return this._repository
+      .aggregate([
+        {
+          $match: {
+            // ...(status?.length && {
+            //   status: { $in: status },
+            // }),
+            // ...(companiesId?.length && {
+            //   company: { $in: companiesId },
+            // }),
+            // ...(housesId?.length && {
+            //   house: { $in: housesId },
+            // }),
+            // ...(placesId?.length && {
+            //   place: { $in: placesId },
+            // }),
+            startDate: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            __v: 0,
+            reservationsRequests: 0,
+            createdBy: 0,
+            lastUpdatedBy: 0,
+            house: 0
+          }
+        }
       ])
       .exec();
   }

@@ -4,11 +4,12 @@ import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
+  ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../authentication/jwt.auth.guard';
 import { Reservation } from 'src/core/entities/reservation/reservation.entity';
-import { AcceptReservationRequestDto, ExtendReservationDto, NewPublicReservationRequestDto, NewReservationDto, ReservationListDto, UpdateReservationDto } from 'src/core/entities/reservation/reservation.dto';
+import { AcceptReservationRequestDto, ExtendReservationDto, NewPublicReservationRequestDto, NewReservationDto, ReservationAgendaList, ReservationListDto, UpdateReservationDto } from 'src/core/entities/reservation/reservation.dto';
 
 
 @ApiTags('Reservation')
@@ -48,7 +49,7 @@ export class ReservationsController {
   //   return this.service.update(value);
   // }
 
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'List of reservations.',
     type: Reservation,
     isArray: true,
@@ -65,7 +66,7 @@ export class ReservationsController {
     return this.service.list(value);
   }
 
-  @ApiCreatedResponse({
+  @ApiOkResponse({
     description: 'List of reservations.',
     type: Reservation,
     isArray: true,
@@ -80,6 +81,23 @@ export class ReservationsController {
   @Post('/public-list')
   async publicList(@Body() value: ReservationListDto) {
     return this.service.publicList(value);
+  }
+
+  @ApiOkResponse({
+    description: 'List of reservations.',
+    type: Reservation,
+    isArray: true,
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Internal server error occured.',
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request.',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post('/agenda-list')
+  async listAgenda(@Body() value: ReservationAgendaList) {
+    return this.service.listAgenda(value);
   }
 
   @ApiCreatedResponse({

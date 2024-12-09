@@ -22,13 +22,13 @@ export class AuthenticationService {
       })
     }
     const user = result.user;
-    if (authDto['app']?.length && user.company.name !== authDto['app']) {
-      return fail({
-        code: HttpStatus.OK,
-        message: "Not authorized",
-        error: "You are not authorized to connect to this platform."
-      })
-    }
+    // if (authDto['app']?.length && user.company.name !== authDto['app']) {
+    //   return fail({
+    //     code: HttpStatus.OK,
+    //     message: "Not authorized",
+    //     error: "You are not authorized to connect to this platform."
+    //   })
+    // }
     const payload = {
       userId: user['_id'],
       code: user.code,
@@ -45,7 +45,9 @@ export class AuthenticationService {
 
   async validateUser(authDto: AuthDto) {
     const { email, password, phone } = authDto;
+    console.log({ phone, password })
     const user = await this.dataServices.users.authentication(phone);
+    console.log({ user })
     if (!user) {
       return {
         success: false,

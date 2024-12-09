@@ -67,6 +67,15 @@ export interface IReservationList {
   userCountryCode?: string;
 }
 
+export interface IReservationAgendaList {
+  status?: EReservationStatus[];
+  startDate: Date;
+  endDate: Date;
+  companiesId?: Types.ObjectId[];
+  placesId?: Types.ObjectId[];
+  housesId?: Types.ObjectId[];
+}
+
 export enum EReservationDuration {
   DAY = 'DAY',
   HALF_DAY = 'HALF_DAY',
@@ -93,9 +102,9 @@ export const getReservationUpdateStatusMessage = (
   try {
     switch (status) {
       case EReservationStatus.ACCEPTED:
-        return 'Votre réservation a été acceptée. Nous vous contacterons sous peu. Pour procéder au paiement.';
+        return 'Votre réservation est acceptée. Nous vous contacterons sous peu. Pour procéder au paiement.';
       case EReservationStatus.CANCELLED:
-        return 'Votre réservation a été annulée.';
+        return 'Votre réservation est annulée.';
       case EReservationStatus.ENDED:
         return 'Votre réservation est terminée. Nous espérons que vous avez passé un bon séjour.';
       case EReservationStatus.IN_PROGRESS:

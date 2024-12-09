@@ -40,7 +40,7 @@ export class User extends DefaultAttributes {
   house?: House | Types.ObjectId;
 
   @Prop({ type: String, enum: EAccountType, required: true })
-  account_type: EAccountType;
+  account_type: string;
 
   @Prop({ type: Boolean, default: true })
   isActive?: boolean;

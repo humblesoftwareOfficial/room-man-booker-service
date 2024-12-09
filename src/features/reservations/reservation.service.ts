@@ -8,6 +8,7 @@ import {
   ExtendReservationDto,
   NewPublicReservationRequestDto,
   NewReservationDto,
+  ReservationAgendaList,
   ReservationListDto,
   ReservationRequestDto,
   UpdateReservationDto,
@@ -21,7 +22,13 @@ import {
   ISendPushNotificationsClient,
   getReservationUpdateStatusMessage,
 } from './reservations.helper';
-import { formatDateToString, stringToFullDate } from '../helpers/date.helper';
+import {
+  formatDateToString,
+  getTimeDifference,
+  isValidIntervalDate,
+  stringToDate,
+  stringToFullDate,
+} from '../helpers/date.helper';
 import { __sendPushNotifications } from 'src/config/notifications';
 import { EAccountType } from '../users/users.helper';
 import { EDevise, EPlaceStatus } from '../places/places.helper';
@@ -574,7 +581,7 @@ export class ReservationsService {
     value: NewPublicReservationRequestDto,
   ): Promise<Result> {
     try {
-      console.log({ value })
+      console.log({ value });
       const place = await this.dataServices.places.findOne(
         value.place,
         '_id code isDeleted company description house prices',
@@ -769,6 +776,7 @@ export class ReservationsService {
           message: `Réservation démarrée au nom de: ${reservation.user.firstName} ${reservation.user.lastName}`,
         });
         if (reservation.user.tokenValue) {
+          console.log('here');
           this.__pushNotificationsClient({
             message: `Bonjour ${reservation.user.firstName}, nous vous souhaitons un excéllent séjour  au: ${place.description}.`,
             extras: `${reservation.code}`,
@@ -796,7 +804,7 @@ export class ReservationsService {
         });
         if (reservation.user.tokenValue) {
           this.__pushNotificationsClient({
-            message: `Bonjour ${reservation.user.firstName}, votre demande de réservation pour: ${place.description} a été acceptée.`,
+            message: `Bonjour ${reservation.user.firstName}, votre demande de réservation pour: ${place.description} est acceptée.`,
             extras: `${reservation.code}`,
             title: 'Demande de réservation acceptée',
             tokenValue: `${reservation.user.tokenValue}`,
@@ -889,7 +897,7 @@ export class ReservationsService {
       });
       if (reservation.user.tokenValue) {
         this.__pushNotificationsClient({
-          message: `Bonjour ${reservation.user.firstName}, votre demande de réservation pour: ${place.description} a été annulée (rejetée).`,
+          message: `Bonjour ${reservation.user.firstName}, votre demande de réservation pour: ${place.description} est annulée (rejetée).`,
           extras: `${reservation.code}`,
           title: 'Réservation annulée (rejetée)',
           tokenValue: `${reservation.user.tokenValue}`,
@@ -1020,9 +1028,11 @@ export class ReservationsService {
       });
       if (reservation.user.tokenValue) {
         this.__pushNotificationsClient({
-          message: `Bonjour ${reservation.user.firstName}, votre réservation a été prolongée jusqu'au ${formatDateToString(
-          endDate,
-        )} à ${endDate.getHours()}:${endDate.getMinutes()}.`,
+          message: `Bonjour ${
+            reservation.user.firstName
+          }, votre réservation est prolongée jusqu'au ${formatDateToString(
+            endDate,
+          )} à ${endDate.getHours()}:${endDate.getMinutes()}.`,
           extras: `${reservation.code}`,
           title: 'Réservation annulée (rejetée)',
           tokenValue: `${reservation.user.tokenValue}`,
@@ -1036,6 +1046,128 @@ export class ReservationsService {
       console.log({ error });
       throw new HttpException(
         `Error while extending reservation. Try again.`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async listAgenda(filter: ReservationAgendaList): Promise<Result> {
+    try {
+      const user = await this.dataServices.users.findOne(
+        filter.by,
+        '_id company account_type house',
+      );
+      if (!user) {
+        return fail({
+          code: HttpStatus.NOT_FOUND,
+          message: 'user not found!',
+          error: 'Not found',
+        });
+      }
+      if (user.isDeleted) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'This user is no longer active',
+          error: 'Bad request',
+        });
+      }
+      const startDate = stringToDate(filter.startDate);
+      const endDate = stringToDate(filter.endDate);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      if (!isValidIntervalDate(startDate, endDate)) {
+        return fail({
+          code: HttpStatus.BAD_REQUEST,
+          message: 'Invalid date range filter!',
+          error: 'Bad request!',
+        });
+      }
+      let places = [];
+      if (filter.places?.length) {
+        places = await this.dataServices.places.findAllByCodes(
+          filter.places,
+          '_id',
+        );
+        if (!places.length) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'Places not found',
+            error: 'Not found',
+          });
+        }
+      }
+      let house = null;
+      if (filter.house) {
+        house = await this.dataServices.houses.findOne(
+          filter.house,
+          '_id company',
+        );
+        if (!house) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'House not found',
+            error: 'Not found',
+          });
+        }
+        if (
+          house.company.toString() !== user.company.toString() &&
+          user.account_type !== EAccountType.SUPER_ADMIN
+        ) {
+          return fail({
+            code: HttpStatus.NOT_FOUND,
+            message: 'House not found',
+            error: 'Not found',
+          });
+        }
+      }
+      const result = await this.dataServices.reservations.listAgenda({
+        status: filter.status,
+        companiesId: user.company ? [user.company as Types.ObjectId] : [],
+        placesId: places?.length ? places.flatMap((o) => o['_id']) : [],
+        housesId: house ? [house['_id']] : [],
+        startDate,
+        endDate,
+      });
+      if (!result.length) {
+        return succeed({
+          code: HttpStatus.BAD_REQUEST,
+          message: '',
+          data: { total: 0, reservations: [] },
+        });
+      }
+      await this.dataServices.reservations.populateReservationInfos(result);
+      const groupedData = Object.values(
+        result.reduce((acc, obj) => {
+          // new Date().getHours
+          const year = obj.startDate.getFullYear();
+          const month = obj.startDate.getMonth() + 1;
+          const day = obj.startDate.getDate();
+          const dateKey = `${year}-${month > 9 ? month : `0${month}`}-${
+            day > 9 ? day : `0${day}`
+          }`;
+          if (!acc[dateKey]) {
+            acc[dateKey] = { title: dateKey, data: [] };
+          }
+          const hour = obj.startDate.getHours();
+          const minute = obj.startDate.getMinutes();
+
+          acc[dateKey].data.push({
+            ...obj,
+            // hour: hour < 12 ? `${hour}am`: `${hour}pm`,
+            hour: `${hour > 9 ? hour : `0${hour}`}:${minute > 9 ? minute : `0${minute}`}`,
+            duration: getTimeDifference(obj.startDate, obj.endDate),
+            title: `${obj.user.firstName} ${obj.user.lastName}`,
+          });
+          return acc;
+        }, {}),
+      );
+      return succeed({
+        data: { reservations: groupedData },
+      });
+    } catch (error) {
+      console.log({ error });
+      throw new HttpException(
+        `Error while getting reservations agenda. Try again.`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

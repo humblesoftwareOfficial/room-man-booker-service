@@ -73,7 +73,7 @@ export enum EAccountType {
 export enum EAccountTypeCreation {
     ADMIN = 'ADMIN',
     SUPERVISOR = 'SUPERVISOR',
-  }
+}
 
 export enum EUserGender {
   MALE = 'MALE',

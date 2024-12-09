@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { Medias } from '../entities/places/place-media.entity';
 import { IPlaceList, IPlaceListByCompany } from 'src/features/places/places.helper';
-import { IPlaceCAAmount, IReservationList, IReservationRecap, IReservationsByPlace } from 'src/features/reservations/reservations.helper';
+import { IPlaceCAAmount, IReservationAgendaList, IReservationList, IReservationRecap, IReservationsByPlace } from 'src/features/reservations/reservations.helper';
 import { IHouseList } from 'src/features/houses/houses.helper';
 import { IUsersList } from 'src/features/users/users.helper';
 import { IFavoritePlacesList } from 'src/features/favorites/favorites.helper';
@@ -84,6 +84,7 @@ export abstract class IReservationRepository<T> {
   abstract getReservationsByPlace(filter: IReservationsByPlace): Promise<any[]>;
   abstract getPlaceTotalAmount(filter: IPlaceCAAmount): Promise<any[]>;
   abstract getRecap(filter: IReservationRecap): Promise<any[]>;
+  abstract listAgenda(filter: IReservationAgendaList): Promise<any[]>;
 }
 
 export abstract class IFavoriteRepository<T> {

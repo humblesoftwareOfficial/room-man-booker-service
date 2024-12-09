@@ -204,20 +204,29 @@ export const getCurrentMonthInterval = () => {
   const currentDate = new Date();
 
   // Calculate the first day of the current month
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  const firstDayOfMonth = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth(),
+    1,
+  );
   firstDayOfMonth.setHours(0, 0, 0, 0); // Set to start of the day
 
   // Calculate the last day of the current month
-  const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+  const lastDayOfMonth = new Date(
+    currentDate.getFullYear(),
+    currentDate.getMonth() + 1,
+    0,
+  );
   lastDayOfMonth.setHours(23, 59, 59, 999); // Set to end of the day
 
   return {
     start: firstDayOfMonth,
-    end: lastDayOfMonth
+    end: lastDayOfMonth,
   };
-}
+};
 
-export const isValidIntervalDate = (startDate: Date, endDate: Date) => endDate >= startDate;
+export const isValidIntervalDate = (startDate: Date, endDate: Date) =>
+  endDate >= startDate;
 
 export const formatIntervalDate = (startDate: Date, endDate: Date) => {
   const formattedEndDate = endDate;
@@ -235,4 +244,31 @@ export const formatIntervalDate = (startDate: Date, endDate: Date) => {
     formatedOneDateFilter.endDate.setHours(23, 59, 59, 999);
   }
   return { formattedEndDate, formatedOneDateFilter };
+};
+
+export const getTimeDifference = (startDate: any, endDate: any) => {
+  try {
+    const msDifference = endDate - startDate; // Différence en millisecondes
+
+  // Convertir la différence en différentes unités
+  const seconds = Math.floor(msDifference / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  // Déterminer la bonne unité et format
+  if (years > 0) return years === 1 ? '1 an' : `${years} ans`;
+  if (months > 0) return months === 1 ? '1 mois' : `${months} mois`;
+  if (weeks > 0) return weeks === 1 ? '1 semaine' : `${weeks} semaines`;
+  if (days > 0) return days === 1 ? '1 jour' : `${days} jours`;
+  if (hours > 0) return hours === 1 ? '1h' : `${hours}heures`;
+  if (minutes > 0) return minutes === 1 ? '1min.' : `${minutes}min.`;
+  return seconds === 1 ? '1sec.' : `${seconds}sec.`;
+  } catch (error) {
+    console.log({ error })
+    return 'N/A'
+  }
 };
