@@ -130,6 +130,7 @@ export class PlaceRepository<T>
             createdBy: 0,
             __v: 0,
             reservations: 0,
+            reservationsRequests: 0
           },
         },
         {

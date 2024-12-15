@@ -450,6 +450,7 @@ export class PlacesService {
       return succeed({
         code: HttpStatus.OK,
         data: {},
+        message: "Place successfully updated."
       });
     } catch (error) {
       throw new HttpException(
@@ -522,7 +523,7 @@ export class PlacesService {
 
   async findOne(code: string): Promise<Result> {
     try {
-      const place = await this.dataServices.places.findOne(code, '-__v');
+      const place = await this.dataServices.places.findOne(code, '-__v -reservationsRequests -lastUpdatedBy -createdBy');
       if (!place) {
         return fail({
           code: HttpStatus.NOT_FOUND,
@@ -605,8 +606,6 @@ export class PlacesService {
       );
     }
   }
-
-
 
   async __alertEndOfReservation(
     reservationId: Types.ObjectId,

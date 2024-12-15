@@ -47,7 +47,7 @@ export class AuthenticationService {
     const { email, password, phone } = authDto;
     console.log({ phone, password })
     const user = await this.dataServices.users.authentication(phone);
-    console.log({ user })
+    // console.log({ user })
     if (!user) {
       return {
         success: false,

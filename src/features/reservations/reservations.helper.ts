@@ -51,6 +51,7 @@ export enum EReservationStatus {
   ON_REQUEST = 'ON_REQUEST',
   ACCEPTED = 'ACCEPTED',
   CANCELLED = 'CANCELLED',
+  VALIDATED = 'VALIDATED',
   IN_PROGRESS = 'IN_PROGRESS',
   ENDED = 'ENDED',
 }
